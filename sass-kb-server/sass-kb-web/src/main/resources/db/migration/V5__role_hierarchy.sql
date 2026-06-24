@@ -1,0 +1,2 @@
+-- 角色层级支持
+ALTER TABLE role ADD COLUMN IF NOT EXISTS parent_id VARCHAR(32);

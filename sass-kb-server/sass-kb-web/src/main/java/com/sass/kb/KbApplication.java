@@ -1,0 +1,23 @@
+package com.sass.kb;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
+
+@SpringBootApplication
+@EnableAspectJAutoProxy
+@ComponentScan(basePackages = "com.sass.kb")
+public class KbApplication {
+    public static void main(String[] args) {
+        ConfigurableApplicationContext context = SpringApplication.run(KbApplication.class, args);
+        System.out.println("=== BEANS COUNT: " + context.getBeanDefinitionCount() + " ===");
+        String[] beanNames = context.getBeanNamesForType(Object.class);
+        for (String name : beanNames) {
+            if (name.toLowerCase().contains("controller")) {
+                System.out.println("  - CONTROLLER BEAN: " + name);
+            }
+        }
+    }
+}

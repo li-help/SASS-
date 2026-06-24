@@ -1,0 +1,40 @@
+package com.sass.kb.auth.controller;
+
+import com.sass.kb.auth.dto.LoginRequest;
+import com.sass.kb.auth.dto.RefreshRequest;
+import com.sass.kb.auth.dto.RegisterRequest;
+import com.sass.kb.auth.dto.TokenResponse;
+import com.sass.kb.auth.service.AuthService;
+import com.sass.kb.common.result.R;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/api/auth")
+@RequiredArgsConstructor
+public class AuthController {
+
+    private final AuthService authService;
+
+    @PostMapping("/login")
+    public R<TokenResponse> login(@Valid @RequestBody LoginRequest req) {
+        TokenResponse result = authService.login(req);
+        return R.ok(result);
+    }
+
+    @PostMapping("/refresh")
+    public R<TokenResponse> refresh(@Valid @RequestBody RefreshRequest req) {
+        TokenResponse result = authService.refresh(req);
+        return R.ok(result);
+    }
+
+    @PostMapping("/register")
+    public R<String> register(@Valid @RequestBody RegisterRequest req) {
+        String realName = authService.register(req);
+        return R.ok("注册成功，欢迎 " + realName);
+    }
+}

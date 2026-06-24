@@ -1,0 +1,102 @@
+# GitLab CI/CD Pipeline — SASS知识平台
+# 构建 → Docker 镜像 → 推送 GitLab Registry → 部署到 ECS
+
+stages:
+  - docker
+  - deploy
+
+variables:
+  BACKEND_IMAGE: $CI_REGISTRY_IMAGE/sass-kb-server
+  FRONTEND_IMAGE: $CI_REGISTRY_IMAGE/sass-kb-admin
+  # Docker-in-Docker 必需配置
+  DOCKER_HOST: tcp://docker:2375
+  DOCKER_TLS_CERTDIR: ""
+  DOCKER_DRIVER: overlay2
+
+# ==================== Docker Stage ====================
+
+docker-backend:
+  stage: docker
+  image: docker:stable
+  services:
+    - name: docker:dind
+      command:
+        - "--registry-mirror=https://docker.1panel.live"
+        - "--registry-mirror=https://registry.docker-cn.com"
+        - "--registry-mirror=https://docker.unsee.tech"
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - cd sass-kb-server
+    - docker build -t $BACKEND_IMAGE:$CI_COMMIT_SHORT_SHA .
+    - docker tag $BACKEND_IMAGE:$CI_COMMIT_SHORT_SHA $BACKEND_IMAGE:latest
+    - docker push $BACKEND_IMAGE:$CI_COMMIT_SHORT_SHA
+    - docker push $BACKEND_IMAGE:latest
+  only:
+    - main
+    - develop
+
+docker-frontend:
+  stage: docker
+  image: node:20-alpine
+  services:
+    - name: docker:dind
+      command:
+        - "--registry-mirror=https://docker.1panel.live"
+        - "--registry-mirror=https://registry.docker-cn.com"
+        - "--registry-mirror=https://docker.unsee.tech"
+  before_script:
+    - sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
+    - apk add --no-cache docker-cli
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - cd sass-kb-admin
+    - npm ci
+    - npm run build
+    - docker build -t $FRONTEND_IMAGE:$CI_COMMIT_SHORT_SHA .
+    - docker tag $FRONTEND_IMAGE:$CI_COMMIT_SHORT_SHA $FRONTEND_IMAGE:latest
+    - docker push $FRONTEND_IMAGE:$CI_COMMIT_SHORT_SHA
+    - docker push $FRONTEND_IMAGE:latest
+  only:
+    - main
+    - develop
+
+# ==================== Deploy Stage ====================
+
+deploy:
+  stage: deploy
+  image: alpine:latest
+  before_script:
+    - sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
+    - apk add --no-cache openssh-client docker-compose
+    - mkdir -p ~/.ssh
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - ssh-keyscan -H $SSH_HOST >> ~/.ssh/known_hosts 2>/dev/null
+  script:
+    - |
+      # 上传 docker-compose.prod.yml 到服务器
+      scp docker-compose.prod.yml $SSH_USER@$SSH_HOST:/opt/sass-kb/docker-compose.yml
+
+      # 在服务器上执行部署
+      ssh $SSH_USER@$SSH_HOST '
+        set -e
+
+        # 登录 GitLab Container Registry
+        echo "'"$REGISTRY_TOKEN"'" | docker login -u gitlab-ci-token --password-stdin "'"$CI_REGISTRY"'"
+
+        # 拉取最新镜像
+        cd /opt/sass-kb
+        CI_REGISTRY_IMAGE="'"$CI_REGISTRY_IMAGE"'" \
+          docker compose pull
+
+        # 重启服务（只重启 backend 和 frontend，基础设施不动）
+        CI_REGISTRY_IMAGE="'"$CI_REGISTRY_IMAGE"'" \
+          docker compose up -d --remove-orphans backend frontend
+
+        # 清理旧镜像
+        docker image prune -f
+      '
+  only:
+    - main  # 只有 main 分支自动部署
+  when: manual  # 部署需手动触发（去掉此行则自动部署）
