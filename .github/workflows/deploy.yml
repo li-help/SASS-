@@ -126,7 +126,8 @@ jobs:
 
       - name: 上传产物到服务器
         run: |
-          scp -r deploy/admin server:/home/${{ secrets.SERVER_USER }}/deploy/admin/
+          ssh server "mkdir -p /home/${{ secrets.SERVER_USER }}/deploy/admin /home/${{ secrets.SERVER_USER }}/deploy/server"
+          scp -r deploy/admin/* server:/home/${{ secrets.SERVER_USER }}/deploy/admin/
           scp deploy/server/*.jar server:/home/${{ secrets.SERVER_USER }}/deploy/server/
 
       - name: 停服上传重启
