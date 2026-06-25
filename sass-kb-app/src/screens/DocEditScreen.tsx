@@ -1,9 +1,11 @@
 import { useState, useRef, useCallback } from 'react';
-import { View, StyleSheet, ActivityIndicator, Text, TextInput, Alert } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Text, TextInput, Alert, TouchableOpacity } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useQuery, useMutation } from '@tanstack/react-query';
+import { Ionicons } from '@expo/vector-icons';
 import { docApi } from '@/services/docService';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { colors, spacing, radius } from '@/theme';
 
 type Props = NativeStackScreenProps<any, 'DocEdit'>;
 
@@ -14,7 +16,6 @@ export default function DocEditScreen({ route, navigation }: Props) {
   const [contentHtml, setContentHtml] = useState('');
   const [version, setVersion] = useState(1);
   const [originalContentJson, setOriginalContentJson] = useState('');
-  const [loaded, setLoaded] = useState(false);
 
   const { isLoading } = useQuery({
     queryKey: ['doc', docId],
@@ -48,12 +49,9 @@ export default function DocEditScreen({ route, navigation }: Props) {
         Alert.alert('错误', res.message || '保存失败');
       }
     },
-    onError: () => {
-      Alert.alert('错误', '保存失败，请检查网络');
-    },
+    onError: () => Alert.alert('错误', '保存失败，请检查网络'),
   });
 
-  // 保存按钮回调
   const handleSave = useCallback(() => {
     webViewRef.current?.injectJavaScript(`
       (function() {
@@ -71,9 +69,6 @@ export default function DocEditScreen({ route, navigation }: Props) {
         setContentHtml(data.html);
         saveMut.mutate();
       }
-      if (data.type === 'loaded') {
-        setLoaded(true);
-      }
     } catch {
       // ignore parse errors
     }
@@ -82,7 +77,7 @@ export default function DocEditScreen({ route, navigation }: Props) {
   if (isLoading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#1677ff" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -99,37 +94,43 @@ export default function DocEditScreen({ route, navigation }: Props) {
     padding: 16px;
     line-height: 1.8;
     font-size: 16px;
-    color: #1f1f1f;
+    color: #1F1F1F;
     margin: 0;
   }
   body:focus { outline: none; }
-  img { max-width: 100%; height: auto; }
+  h1, h2, h3 { color: #1E3A5F; }
+  img { max-width: 100%; height: auto; border-radius: 6px; }
   table { width: 100%; border-collapse: collapse; }
-  td, th { border: 1px solid #e0e0e0; padding: 8px; }
-  pre { background: #f5f5f5; padding: 12px; border-radius: 6px; }
+  td, th { border: 1px solid #E8E8E8; padding: 8px; }
+  pre { background: #F0F2F5; padding: 12px; border-radius: 6px; }
+  a { color: #1E3A5F; }
 </style>
 </head>
 <body contenteditable="true">${contentHtml}</body>
-<script>
-  document.body.addEventListener('focus', function() {
-    window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'loaded' }));
-  });
-</script>
 </html>`;
 
   return (
     <View style={styles.container}>
       <View style={styles.titleBar}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <Ionicons name="arrow-back" size={20} color={colors.primary} />
+        </TouchableOpacity>
         <TextInput
           style={styles.titleInput}
           value={title}
           onChangeText={setTitle}
           placeholder="文档标题"
-          placeholderTextColor="#999"
+          placeholderTextColor={colors.textTertiary}
         />
-        <Text style={styles.saveBtn} onPress={handleSave}>
-          {saveMut.isPending ? '保存中...' : '保存'}
-        </Text>
+        <TouchableOpacity
+          style={[styles.saveBtn, saveMut.isPending && styles.savingBtn]}
+          onPress={handleSave}
+          disabled={saveMut.isPending}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="save-outline" size={16} color={colors.textInverse} />
+          <Text style={styles.saveBtnText}> {saveMut.isPending ? '保存中...' : '保存'}</Text>
+        </TouchableOpacity>
       </View>
       <WebView
         ref={webViewRef}
@@ -143,29 +144,46 @@ export default function DocEditScreen({ route, navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1, backgroundColor: colors.bgCard },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   titleBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 2,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-    backgroundColor: '#fff',
+    borderBottomColor: colors.borderLight,
+    backgroundColor: colors.bgCard,
+    gap: spacing.sm,
+  },
+  backBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primaryLight,
   },
   titleInput: {
     flex: 1,
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
-    color: '#1f1f1f',
-    paddingVertical: 6,
+    color: colors.textPrimary,
+    paddingVertical: spacing.xs,
   },
   saveBtn: {
-    fontSize: 16,
-    color: '#1677ff',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  savingBtn: { opacity: 0.6 },
+  saveBtnText: {
+    fontSize: 14,
+    color: colors.textInverse,
     fontWeight: '600',
-    marginLeft: 12,
   },
   webview: { flex: 1 },
 });

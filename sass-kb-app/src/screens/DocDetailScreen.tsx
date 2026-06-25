@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Dimensions, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useQuery } from '@tanstack/react-query';
+import { Ionicons } from '@expo/vector-icons';
 import { docApi } from '@/services/docService';
 import { usePermission } from '@/hooks/usePermission';
 import CommentList from '@/components/CommentList';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { colors, spacing, radius, shadows } from '@/theme';
 
 type Props = NativeStackScreenProps<any, 'DocDetail'>;
 
@@ -29,7 +31,7 @@ export default function DocDetailScreen({ route, navigation }: Props) {
   if (isLoading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#1677ff" />
+        <ActivityIndicator size="large" color={colors.primary} />
         <Text style={styles.loadingText}>加载文档...</Text>
       </View>
     );
@@ -38,9 +40,11 @@ export default function DocDetailScreen({ route, navigation }: Props) {
   if (isError) {
     return (
       <View style={styles.center}>
+        <Ionicons name="alert-circle-outline" size={48} color={colors.error} />
         <Text style={styles.errorText}>加载失败: {(error as Error)?.message || '未知错误'}</Text>
-        <TouchableOpacity style={styles.retryBtn} onPress={() => refetch()}>
-          <Text style={styles.retryText}>重试</Text>
+        <TouchableOpacity style={styles.retryBtn} onPress={() => refetch()} activeOpacity={0.7}>
+          <Ionicons name="refresh" size={16} color={colors.textInverse} />
+          <Text style={styles.retryText}> 重试</Text>
         </TouchableOpacity>
       </View>
     );
@@ -61,21 +65,21 @@ export default function DocDetailScreen({ route, navigation }: Props) {
     padding: 16px;
     line-height: 1.8;
     font-size: 16px;
-    color: #1f1f1f;
+    color: #1F1F1F;
     margin: 0;
   }
-  h1 { font-size: 28px; margin: 16px 0 12px; }
-  h2 { font-size: 22px; margin: 14px 0 10px; }
+  h1 { font-size: 28px; margin: 16px 0 12px; color: #1E3A5F; }
+  h2 { font-size: 22px; margin: 14px 0 10px; color: #1E3A5F; }
   h3 { font-size: 18px; margin: 12px 0 8px; }
   img { max-width: 100%; height: auto; border-radius: 8px; }
   table { width: 100%; border-collapse: collapse; margin: 12px 0; }
-  td, th { border: 1px solid #e0e0e0; padding: 8px 12px; text-align: left; }
-  th { background: #f5f5f5; font-weight: 600; }
+  td, th { border: 1px solid #E8E8E8; padding: 8px 12px; text-align: left; }
+  th { background: #f5f5f5; font-weight: 600; color: #1E3A5F; }
   pre { background: #1e1e1e; color: #d4d4d4; padding: 16px; overflow-x: auto; border-radius: 8px; font-size: 14px; }
-  code { background: #f0f0f0; padding: 2px 6px; border-radius: 4px; font-size: 14px; }
-  blockquote { border-left: 3px solid #e5e7eb; padding-left: 16px; color: #6b7280; margin: 12px 0; }
+  code { background: #E8EFF5; padding: 2px 6px; border-radius: 4px; font-size: 14px; color: #1E3A5F; }
+  blockquote { border-left: 3px solid #1E3A5F; padding-left: 16px; color: #595959; margin: 12px 0; }
   ul, ol { padding-left: 24px; }
-  a { color: #1677ff; }
+  a { color: #1E3A5F; }
 </style>
 </head>
 <body>${contentHtml}</body>
@@ -83,29 +87,41 @@ export default function DocDetailScreen({ route, navigation }: Props) {
 
   return (
     <View style={styles.container}>
-      {/* Header bar */}
+      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backBtn}>← 返回</Text>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.headerBtn}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Ionicons name="arrow-back" size={20} color={colors.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>{doc?.title || '文档详情'}</Text>
         {canEdit ? (
-          <TouchableOpacity onPress={() => navigation.navigate('DocEdit', { docId, spaceId: doc?.spaceId })}>
-            <Text style={styles.editBtn}>编辑</Text>
+          <TouchableOpacity
+            style={styles.headerBtn}
+            onPress={() => navigation.navigate('DocEdit', { docId, spaceId: doc?.spaceId })}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="create-outline" size={20} color={colors.primary} />
           </TouchableOpacity>
         ) : (
           <View style={styles.readOnlyBadge}>
-            <Text style={styles.readOnlyText}>只读</Text>
+            <Ionicons name="eye-outline" size={12} color={colors.warning} />
+            <Text style={styles.readOnlyText}> 只读</Text>
           </View>
         )}
       </View>
 
-      {/* Sub header: version history link */}
-      <View style={styles.subHeader}>
-        <TouchableOpacity onPress={() => navigation.navigate('VersionList', { docId })}>
-          <Text style={styles.versionLink}>版本历史</Text>
-        </TouchableOpacity>
-      </View>
+      {/* Version history link */}
+      <TouchableOpacity
+        style={styles.subHeader}
+        onPress={() => navigation.navigate('VersionList', { docId })}
+        activeOpacity={0.6}
+      >
+        <Ionicons name="time-outline" size={14} color={colors.primary} />
+        <Text style={styles.versionLink}> 版本历史</Text>
+      </TouchableOpacity>
 
       {/* Content */}
       <ScrollView style={styles.scrollContent}>
@@ -117,15 +133,6 @@ export default function DocDetailScreen({ route, navigation }: Props) {
           scrollEnabled={false}
         />
         <View style={styles.divider} />
-        {/* Tab switcher */}
-        <View style={styles.tabRow}>
-          <TouchableOpacity
-            style={[styles.tab, !showComments && styles.tabActive]}
-            onPress={() => setShowComments(false)}
-          >
-            <Text style={[styles.tabText, !showComments && styles.tabTextActive]}>评论</Text>
-          </TouchableOpacity>
-        </View>
         <CommentList docId={docId} />
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -134,36 +141,76 @@ export default function DocDetailScreen({ route, navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1, backgroundColor: colors.bgCard },
   header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0', backgroundColor: '#fff',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLight,
+    backgroundColor: colors.bgCard,
   },
-  backBtn: { fontSize: 15, color: '#1677ff' },
-  headerTitle: { fontSize: 16, fontWeight: '600', flex: 1, textAlign: 'center', marginHorizontal: 8, color: '#1f1f1f' },
-  editBtn: { fontSize: 15, color: '#1677ff', fontWeight: '600' },
+  headerBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primaryLight,
+  },
+  headerTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    flex: 1,
+    textAlign: 'center',
+    marginHorizontal: spacing.sm,
+    color: colors.textPrimary,
+  },
   subHeader: {
-    flexDirection: 'row', justifyContent: 'center',
-    paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#f0f0f0', backgroundColor: '#fafafa',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.borderLight,
+    backgroundColor: colors.bgInput,
   },
-  versionLink: { fontSize: 14, color: '#1677ff' },
+  versionLink: { fontSize: 13, color: colors.primary, fontWeight: '500' },
   readOnlyBadge: {
-    backgroundColor: '#fff7e6', borderRadius: 4,
-    paddingHorizontal: 8, paddingVertical: 3,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.warningLight,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
   },
-  readOnlyText: { fontSize: 12, color: '#fa8c16', fontWeight: '600' },
+  readOnlyText: { fontSize: 12, color: colors.warning, fontWeight: '600' },
   scrollContent: { flex: 1 },
-  divider: { height: 1, backgroundColor: '#f0f0f0' },
-  tabRow: { flexDirection: 'row', paddingHorizontal: 16, paddingTop: 8 },
-  tab: { paddingVertical: 8, paddingHorizontal: 16, borderBottomWidth: 2, borderBottomColor: 'transparent' },
-  tabActive: { borderBottomColor: '#1677ff' },
-  tabText: { fontSize: 14, color: '#8c8c8c' },
-  tabTextActive: { color: '#1677ff', fontWeight: '600' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' },
-  loadingText: { marginTop: 12, color: '#8c8c8c', fontSize: 14 },
-  errorText: { color: '#ff4d4f', fontSize: 16, marginBottom: 16 },
-  retryBtn: { paddingHorizontal: 24, paddingVertical: 10, backgroundColor: '#1677ff', borderRadius: 8 },
-  retryText: { color: '#fff', fontSize: 14, fontWeight: '600' },
+  divider: { height: 1, backgroundColor: colors.borderLight, marginTop: spacing.sm },
+  center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.bgCard,
+    padding: spacing.xxl,
+  },
+  loadingText: { marginTop: spacing.md, color: colors.textTertiary, fontSize: 14 },
+  errorText: {
+    color: colors.error,
+    fontSize: 15,
+    marginTop: spacing.md,
+    marginBottom: spacing.lg,
+    textAlign: 'center',
+  },
+  retryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.sm + 2,
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+  },
+  retryText: { color: colors.textInverse, fontSize: 14, fontWeight: '600' },
 });

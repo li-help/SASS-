@@ -5,8 +5,10 @@ import {
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useQuery } from '@tanstack/react-query';
+import { Ionicons } from '@expo/vector-icons';
 import { docApi, type DocumentVersion } from '@/services/docService';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { colors, spacing, radius, shadows } from '@/theme';
 
 type Props = NativeStackScreenProps<any, 'VersionList'>;
 
@@ -47,8 +49,12 @@ export default function VersionListScreen({ route, navigation }: Props) {
     return (
       <TouchableOpacity
         style={styles.versionItem}
+        activeOpacity={0.7}
         onPress={() => handlePreview(item.versionNumber)}
       >
+        <View style={styles.versionIcon}>
+          <Ionicons name="git-branch-outline" size={20} color={isLatest ? colors.primary : colors.textTertiary} />
+        </View>
         <View style={styles.versionInfo}>
           <View style={styles.versionHeader}>
             <Text style={styles.versionLabel}>v{item.versionNumber}</Text>
@@ -62,24 +68,27 @@ export default function VersionListScreen({ route, navigation }: Props) {
             {item.changeSummary || (item.createdAt ? `保存于 ${item.createdAt.substring(0, 16)}` : '')}
           </Text>
         </View>
-        <Text style={styles.arrow}>›</Text>
+        <Ionicons name="chevron-forward" size={18} color={colors.border} />
       </TouchableOpacity>
     );
   };
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backBtn}>← 返回</Text>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backBtn}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Ionicons name="arrow-back" size={20} color={colors.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>版本历史</Text>
-        <View style={{ width: 50 }} />
+        <View style={{ width: 36 }} />
       </View>
 
       {isLoading ? (
-        <ActivityIndicator size="large" color="#1677ff" style={{ marginTop: 40 }} />
+        <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} />
       ) : (
         <FlatList
           data={versions}
@@ -89,7 +98,10 @@ export default function VersionListScreen({ route, navigation }: Props) {
           onRefresh={refetch}
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={
-            <Text style={styles.emptyText}>暂无历史版本</Text>
+            <View style={styles.emptyState}>
+              <Ionicons name="time-outline" size={48} color={colors.border} />
+              <Text style={styles.emptyText}>暂无历史版本</Text>
+            </View>
           }
         />
       )}
@@ -103,17 +115,17 @@ export default function VersionListScreen({ route, navigation }: Props) {
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setPreviewContent(null)}>
-              <Text style={styles.closeBtn}>关闭</Text>
+              <Ionicons name="close" size={24} color={colors.primary} />
             </TouchableOpacity>
             <Text style={styles.modalTitle}>
               版本 v{previewContent?.versionNumber}
             </Text>
-            <View style={{ width: 40 }} />
+            <View style={{ width: 24 }} />
           </View>
           {previewContent && (
             <WebView
               source={{
-                html: `<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"><style>body{font-family:-apple-system,sans-serif;padding:16px;line-height:1.8;font-size:16px;color:#1f1f1f;}img{max-width:100%;}table{width:100%;border-collapse:collapse;}td,th{border:1px solid #e0e0e0;padding:8px;}pre{background:#f5f5f5;padding:12px;border-radius:6px;}</style></head><body>${previewContent.html}</body></html>`,
+                html: `<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"><style>body{font-family:-apple-system,sans-serif;padding:16px;line-height:1.8;font-size:16px;color:#1F1F1F;}h1,h2,h3{color:#1E3A5F;}img{max-width:100%;border-radius:6px;}table{width:100%;border-collapse:collapse;}td,th{border:1px solid #E8E8E8;padding:8px;}pre{background:#F0F2F5;padding:12px;border-radius:6px;}a{color:#1E3A5F;}</style></head><body>${previewContent.html}</body></html>`,
               }}
               style={styles.webview}
             />
@@ -125,38 +137,76 @@ export default function VersionListScreen({ route, navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5' },
+  container: { flex: 1, backgroundColor: colors.bgPage },
   header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 12,
-    backgroundColor: '#fff', borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#f0f0f0',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.bgCard,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.borderLight,
   },
-  backBtn: { fontSize: 15, color: '#1677ff' },
-  headerTitle: { fontSize: 17, fontWeight: '600', color: '#1f1f1f' },
-  listContent: { padding: 16 },
+  backBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primaryLight,
+  },
+  headerTitle: { fontSize: 17, fontWeight: '600', color: colors.textPrimary },
+  listContent: { padding: spacing.lg, paddingBottom: spacing.xxl },
   versionItem: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#fff', borderRadius: 10, padding: 14, marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.bgCard,
+    borderRadius: radius.md,
+    padding: spacing.md + 2,
+    marginBottom: spacing.sm,
+    ...shadows.sm,
+  },
+  versionIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.sm,
+    backgroundColor: colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.md,
   },
   versionInfo: { flex: 1 },
-  versionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  versionLabel: { fontSize: 16, fontWeight: '600', color: '#1f1f1f' },
+  versionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.xs,
+  },
+  versionLabel: { fontSize: 15, fontWeight: '600', color: colors.textPrimary },
   latestBadge: {
-    backgroundColor: '#e6f4ff', borderRadius: 4,
-    paddingHorizontal: 6, paddingVertical: 2,
+    backgroundColor: colors.primaryLight,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
   },
-  latestText: { fontSize: 10, color: '#1677ff', fontWeight: '600' },
-  versionMeta: { fontSize: 13, color: '#8c8c8c' },
-  arrow: { fontSize: 22, color: '#d9d9d9', marginLeft: 8 },
-  emptyText: { textAlign: 'center', color: '#8c8c8c', fontSize: 15, marginTop: 60 },
-  modalContainer: { flex: 1, backgroundColor: '#fff' },
+  latestText: { fontSize: 10, color: colors.primary, fontWeight: '600' },
+  versionMeta: { fontSize: 13, color: colors.textTertiary },
+  emptyState: {
+    alignItems: 'center',
+    paddingTop: 80,
+  },
+  emptyText: { color: colors.textTertiary, fontSize: 15, marginTop: spacing.md },
+  modalContainer: { flex: 1, backgroundColor: colors.bgCard },
   modalHeader: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#f0f0f0',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.borderLight,
   },
-  closeBtn: { fontSize: 16, color: '#1677ff' },
-  modalTitle: { fontSize: 16, fontWeight: '600', color: '#1f1f1f' },
+  modalTitle: { fontSize: 16, fontWeight: '600', color: colors.textPrimary },
   webview: { flex: 1 },
 });

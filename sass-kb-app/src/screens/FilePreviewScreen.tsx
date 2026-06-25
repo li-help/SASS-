@@ -2,7 +2,9 @@ import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'rea
 import { WebView } from 'react-native-webview';
 import { useQuery } from '@tanstack/react-query';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { Ionicons } from '@expo/vector-icons';
 import { fileApi } from '@/services/fileService';
+import { colors, spacing, radius } from '@/theme';
 
 type Props = NativeStackScreenProps<any, 'FilePreview'>;
 
@@ -23,7 +25,7 @@ export default function FilePreviewScreen({ route }: Props) {
   if (isLoading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#1677ff" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -31,9 +33,11 @@ export default function FilePreviewScreen({ route }: Props) {
   if (isError) {
     return (
       <View style={styles.center}>
+        <Ionicons name="alert-circle-outline" size={48} color={colors.error} />
         <Text style={styles.errorText}>加载失败: {(error as Error)?.message}</Text>
-        <TouchableOpacity style={styles.retryBtn} onPress={() => refetch()}>
-          <Text style={styles.retryText}>重试</Text>
+        <TouchableOpacity style={styles.retryBtn} onPress={() => refetch()} activeOpacity={0.7}>
+          <Ionicons name="refresh" size={16} color={colors.textInverse} />
+          <Text style={styles.retryText}> 重试</Text>
         </TouchableOpacity>
       </View>
     );
@@ -45,6 +49,7 @@ export default function FilePreviewScreen({ route }: Props) {
   if (!url) {
     return (
       <View style={styles.center}>
+        <Ionicons name="eye-off-outline" size={48} color={colors.border} />
         <Text style={styles.errorText}>无法预览此文件</Text>
       </View>
     );
@@ -53,6 +58,7 @@ export default function FilePreviewScreen({ route }: Props) {
   return (
     <View style={styles.container}>
       <View style={styles.infoBar}>
+        <Ionicons name="document-outline" size={18} color={colors.primary} style={{ marginRight: spacing.sm }} />
         <Text style={styles.fileName} numberOfLines={1}>{file?.originalName || '文件预览'}</Text>
       </View>
       <WebView source={{ uri: url }} style={styles.webview} javaScriptEnabled />
@@ -61,12 +67,32 @@ export default function FilePreviewScreen({ route }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' },
-  infoBar: { paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#f0f0f0' },
-  fileName: { fontSize: 15, fontWeight: '500', color: '#1f1f1f' },
+  container: { flex: 1, backgroundColor: colors.bgCard },
+  center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.bgCard,
+    padding: spacing.xxl,
+  },
+  infoBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.borderLight,
+  },
+  fileName: { fontSize: 15, fontWeight: '500', color: colors.textPrimary, flex: 1 },
   webview: { flex: 1 },
-  errorText: { color: '#ff4d4f', fontSize: 16, marginBottom: 16 },
-  retryBtn: { paddingHorizontal: 24, paddingVertical: 10, backgroundColor: '#1677ff', borderRadius: 8 },
-  retryText: { color: '#fff', fontSize: 14, fontWeight: '600' },
+  errorText: { color: colors.error, fontSize: 15, marginTop: spacing.md, marginBottom: spacing.lg },
+  retryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.sm + 2,
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+  },
+  retryText: { color: colors.textInverse, fontSize: 14, fontWeight: '600' },
 });

@@ -6,8 +6,10 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Ionicons } from '@expo/vector-icons';
 import { spaceApi, folderApi, docApi } from '@/services/docService';
 import type { Space, SpaceTreeNode, Document } from '@/services/docService';
+import { colors, spacing, radius, shadows } from '@/theme';
 
 type Nav = NativeStackNavigationProp<any>;
 
@@ -18,7 +20,6 @@ export default function SpaceListScreen() {
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [folderModalOpen, setFolderModalOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
-  const [contextTarget, setContextTarget] = useState<{ id: string; type: 'space' | 'folder' } | null>(null);
 
   const { data: spacesData, isLoading: spacesLoading, refetch: refetchSpaces } = useQuery({
     queryKey: ['spaces'],
@@ -64,7 +65,6 @@ export default function SpaceListScreen() {
     if (node.type === 'doc') {
       navigation.navigate('DocDetail', { docId: node.id });
     } else if (node.type === 'folder') {
-      // 切换选中的文件夹用于新建子文件夹
       setSelectedFolderId(node.id === selectedFolderId ? null : node.id);
     }
   };
@@ -85,20 +85,25 @@ export default function SpaceListScreen() {
   const renderTreeItem = (item: SpaceTreeNode, depth: number = 0) => (
     <TouchableOpacity
       key={item.id}
-      style={[styles.treeItem, { paddingLeft: 16 + depth * 20 }]}
+      style={[styles.treeItem, { paddingLeft: spacing.lg + depth * 20 }]}
       onPress={() => handleDocPress(item)}
       onLongPress={() => handleLongPress(item)}
       delayLongPress={500}
+      activeOpacity={0.6}
     >
-      <Text style={[styles.treeIcon, item.type === 'folder' && styles.folderIcon]}>
-        {item.type === 'folder' ? '📁' : '📄'}
-      </Text>
+      <Ionicons
+        name={item.type === 'folder' ? 'folder' : 'document-text'}
+        size={20}
+        color={item.type === 'folder' ? colors.warning : colors.primary}
+        style={{ marginRight: spacing.sm + 2 }}
+      />
       <Text
         style={[styles.treeName, item.type === 'folder' && styles.folderName]}
         numberOfLines={1}
       >
         {item.name}
       </Text>
+      <Ionicons name="chevron-forward" size={16} color={colors.border} />
     </TouchableOpacity>
   );
 
@@ -117,29 +122,41 @@ export default function SpaceListScreen() {
     return (
       <View style={styles.container}>
         {spacesLoading ? (
-          <ActivityIndicator size="large" color="#1677ff" style={{ marginTop: 60 }} />
+          <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 60 }} />
         ) : (
           <FlatList
             data={spaces}
             keyExtractor={(item) => item.id}
-            refreshControl={<RefreshControl refreshing={spacesLoading} onRefresh={refetchSpaces} />}
+            refreshControl={
+              <RefreshControl
+                refreshing={spacesLoading}
+                onRefresh={refetchSpaces}
+                colors={[colors.primary]}
+              />
+            }
             renderItem={({ item }) => (
               <TouchableOpacity
                 style={styles.spaceCard}
+                activeOpacity={0.7}
                 onPress={() => setSelectedSpace(item.id)}
               >
-                <Text style={styles.spaceIcon}>📚</Text>
+                <View style={styles.spaceIconBg}>
+                  <Ionicons name="folder-open" size={28} color={colors.primary} />
+                </View>
                 <View style={styles.spaceInfo}>
                   <Text style={styles.spaceName}>{item.name}</Text>
                   <Text style={styles.spaceDesc} numberOfLines={2}>
                     {item.description || '暂无描述'}
                   </Text>
                 </View>
-                <Text style={styles.arrow}>›</Text>
+                <Ionicons name="chevron-forward" size={20} color={colors.border} />
               </TouchableOpacity>
             )}
             ListEmptyComponent={
-              <Text style={styles.emptyText}>暂无知识空间</Text>
+              <View style={styles.emptyState}>
+                <Ionicons name="folder-open-outline" size={48} color={colors.border} />
+                <Text style={styles.emptyText}>暂无知识空间</Text>
+              </View>
             }
             contentContainerStyle={styles.listContent}
           />
@@ -151,36 +168,51 @@ export default function SpaceListScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.breadcrumb}>
-        <TouchableOpacity onPress={() => setSelectedSpace(null)}>
-          <Text style={styles.breadcrumbLink}>← 空间列表</Text>
+        <TouchableOpacity onPress={() => setSelectedSpace(null)} style={styles.breadcrumbBtn}>
+          <Ionicons name="arrow-back" size={18} color={colors.primary} />
+          <Text style={styles.breadcrumbLink}> 空间列表</Text>
         </TouchableOpacity>
         <View style={styles.actionRow}>
           <TouchableOpacity
             style={styles.actionBtn}
+            activeOpacity={0.7}
             onPress={() => handleCreateDoc(selectedSpace!)}
           >
-            <Text style={styles.actionBtnText}>+ 文档</Text>
+            <Ionicons name="add" size={16} color={colors.textInverse} />
+            <Text style={styles.actionBtnText}> 文档</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.actionBtn}
+            style={[styles.actionBtn, styles.actionBtnSecondary]}
+            activeOpacity={0.7}
             onPress={() => { setSelectedFolderId(null); setFolderModalOpen(true); }}
           >
-            <Text style={styles.actionBtnText}>+ 文件夹</Text>
+            <Ionicons name="folder-open" size={16} color={colors.primary} />
+            <Text style={styles.actionBtnTextSecondary}> 文件夹</Text>
           </TouchableOpacity>
         </View>
       </View>
+
       {treeLoading ? (
-        <ActivityIndicator size="large" color="#1677ff" style={{ marginTop: 40 }} />
+        <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} />
       ) : (
         <FlatList
           data={tree}
           keyExtractor={(item) => item.id}
-          refreshControl={<RefreshControl refreshing={treeLoading} onRefresh={refetchTree} />}
+          refreshControl={
+            <RefreshControl
+              refreshing={treeLoading}
+              onRefresh={refetchTree}
+              colors={[colors.primary]}
+            />
+          }
           renderItem={({ item }) => (
-            <View>{renderTree([item])}</View>
+            <View style={styles.treeList}>{renderTree([item])}</View>
           )}
           ListEmptyComponent={
-            <Text style={styles.emptyText}>该空间暂无内容</Text>
+            <View style={styles.emptyState}>
+              <Ionicons name="document-text-outline" size={48} color={colors.border} />
+              <Text style={styles.emptyText}>该空间暂无内容</Text>
+            </View>
           }
           contentContainerStyle={styles.listContent}
         />
@@ -203,7 +235,7 @@ export default function SpaceListScreen() {
               value={newFolderName}
               onChangeText={setNewFolderName}
               placeholder="输入文件夹名称"
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.textTertiary}
               autoFocus
             />
             <View style={styles.modalActions}>
@@ -217,6 +249,7 @@ export default function SpaceListScreen() {
                 style={[styles.modalConfirmBtn, !newFolderName.trim() && styles.disabledBtn]}
                 onPress={() => createFolderMut.mutate(newFolderName)}
                 disabled={!newFolderName.trim() || createFolderMut.isPending}
+                activeOpacity={0.7}
               >
                 <Text style={styles.modalConfirmText}>
                   {createFolderMut.isPending ? '创建中...' : '创建'}
@@ -231,100 +264,140 @@ export default function SpaceListScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5' },
-  listContent: { padding: 16 },
+  container: { flex: 1, backgroundColor: colors.bgPage },
+  listContent: { padding: spacing.lg, paddingBottom: spacing.xxl },
   spaceCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    backgroundColor: colors.bgCard,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+    ...shadows.sm,
   },
-  spaceIcon: { fontSize: 32, marginRight: 12 },
+  spaceIconBg: {
+    width: 52,
+    height: 52,
+    borderRadius: radius.md,
+    backgroundColor: colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.md,
+  },
   spaceInfo: { flex: 1 },
-  spaceName: { fontSize: 16, fontWeight: '600', color: '#1f1f1f' },
-  spaceDesc: { fontSize: 13, color: '#8c8c8c', marginTop: 4 },
-  arrow: { fontSize: 24, color: '#d9d9d9', marginLeft: 8 },
+  spaceName: { fontSize: 16, fontWeight: '600', color: colors.textPrimary },
+  spaceDesc: { fontSize: 13, color: colors.textTertiary, marginTop: spacing.xs },
   breadcrumb: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: '#fff',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.bgCard,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: colors.borderLight,
   },
-  breadcrumbLink: { fontSize: 15, color: '#1677ff', fontWeight: '500' },
+  breadcrumbBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  breadcrumbLink: { fontSize: 15, color: colors.primary, fontWeight: '500' },
+  treeList: {
+    backgroundColor: colors.bgCard,
+    borderRadius: radius.md,
+    marginBottom: spacing.sm,
+    overflow: 'hidden',
+    ...shadows.sm,
+  },
   treeItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingRight: 16,
-    backgroundColor: '#fff',
+    paddingVertical: spacing.md,
+    paddingRight: spacing.lg,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: colors.borderLight,
   },
-  treeIcon: { fontSize: 18, marginRight: 10 },
-  folderIcon: { opacity: 0.8 },
-  treeName: { flex: 1, fontSize: 15, color: '#1f1f1f' },
-  folderName: { fontWeight: '500' },
+  treeName: { flex: 1, fontSize: 15, color: colors.textPrimary },
+  folderName: { fontWeight: '600' },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: spacing.xxl * 2,
+  },
   emptyText: {
     textAlign: 'center',
-    color: '#8c8c8c',
+    color: colors.textTertiary,
     fontSize: 15,
-    marginTop: 60,
+    marginTop: spacing.md,
   },
-  actionRow: { flexDirection: 'row', gap: 8 },
+  actionRow: { flexDirection: 'row', gap: spacing.sm },
   actionBtn: {
-    backgroundColor: '#1677ff',
-    borderRadius: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    ...shadows.sm,
   },
-  actionBtnText: { color: '#fff', fontSize: 13, fontWeight: '600' },
+  actionBtnSecondary: {
+    backgroundColor: colors.primaryLight,
+  },
+  actionBtnText: {
+    color: colors.textInverse,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  actionBtnTextSecondary: {
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: '600',
+  },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: 'rgba(0,0,0,0.45)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 32,
+    padding: spacing.xxl,
   },
   modalBox: {
     width: '100%',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 20,
+    backgroundColor: colors.bgCard,
+    borderRadius: radius.lg,
+    padding: spacing.xl,
+    ...shadows.lg,
   },
-  modalTitle: { fontSize: 17, fontWeight: '600', color: '#1f1f1f', marginBottom: 16 },
+  modalTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginBottom: spacing.lg,
+  },
   modalInput: {
     height: 44,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 8,
-    paddingHorizontal: 12,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
     fontSize: 15,
-    backgroundColor: '#fafafa',
-    marginBottom: 20,
+    backgroundColor: colors.bgInput,
+    marginBottom: spacing.xl,
+    color: colors.textPrimary,
   },
-  modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10 },
+  modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.sm + 2 },
   modalCancelBtn: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.sm + 2,
+    borderRadius: radius.sm,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: colors.border,
   },
-  modalCancelText: { fontSize: 15, color: '#666' },
+  modalCancelText: { fontSize: 15, color: colors.textSecondary },
   modalConfirmBtn: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-    backgroundColor: '#1677ff',
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.sm + 2,
+    borderRadius: radius.sm,
+    backgroundColor: colors.primary,
   },
-  modalConfirmText: { fontSize: 15, color: '#fff', fontWeight: '600' },
+  modalConfirmText: { fontSize: 15, color: colors.textInverse, fontWeight: '600' },
   disabledBtn: { opacity: 0.4 },
 });

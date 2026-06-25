@@ -4,7 +4,9 @@ import {
   ActivityIndicator, Alert, Linking, RefreshControl,
 } from 'react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Ionicons } from '@expo/vector-icons';
 import { fileApi, type FileAsset } from '@/services/fileService';
+import { colors, spacing, radius, shadows } from '@/theme';
 
 // 需要安装: npx expo install expo-document-picker
 let DocumentPicker: any = null;
@@ -17,6 +19,16 @@ function formatSize(bytes: number): string {
   if (bytes < 1024) return bytes + ' B';
   if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
   return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+function getFileIcon(mimeType: string): keyof typeof Ionicons.glyphMap {
+  if (!mimeType) return 'document-outline';
+  if (mimeType.startsWith('image/')) return 'image-outline';
+  if (mimeType.startsWith('video/')) return 'videocam-outline';
+  if (mimeType.startsWith('audio/')) return 'musical-notes-outline';
+  if (mimeType.includes('pdf')) return 'document-text-outline';
+  if (mimeType.includes('zip') || mimeType.includes('rar') || mimeType.includes('tar')) return 'archive-outline';
+  return 'document-outline';
 }
 
 export default function FileListScreen() {
@@ -87,10 +99,7 @@ export default function FileListScreen() {
   const handleDelete = (file: FileAsset) => {
     Alert.alert('删除文件', `确定删除「${file.originalName}」？`, [
       { text: '取消', style: 'cancel' },
-      {
-        text: '删除', style: 'destructive',
-        onPress: () => deleteMut.mutate(file.id),
-      },
+      { text: '删除', style: 'destructive', onPress: () => deleteMut.mutate(file.id) },
     ]);
   };
 
@@ -99,7 +108,9 @@ export default function FileListScreen() {
   const renderItem = ({ item }: { item: FileAsset }) => (
     <View style={styles.fileItem}>
       <View style={styles.fileInfo}>
-        <Text style={styles.fileIcon}>📄</Text>
+        <View style={styles.fileIconBg}>
+          <Ionicons name={getFileIcon(item.mimeType)} size={22} color={colors.primary} />
+        </View>
         <View style={styles.fileText}>
           <Text style={styles.fileName} numberOfLines={1}>{item.originalName}</Text>
           <Text style={styles.fileMeta}>
@@ -108,11 +119,12 @@ export default function FileListScreen() {
         </View>
       </View>
       <View style={styles.fileActions}>
-        <TouchableOpacity style={styles.downloadBtn} onPress={() => handleDownload(item)}>
-          <Text style={styles.downloadText}>下载</Text>
+        <TouchableOpacity style={styles.downloadBtn} onPress={() => handleDownload(item)} activeOpacity={0.7}>
+          <Ionicons name="download-outline" size={14} color={colors.primary} />
+          <Text style={styles.downloadText}> 下载</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleDelete(item)}>
-          <Text style={styles.deleteBtn}>删除</Text>
+        <TouchableOpacity onPress={() => handleDelete(item)} activeOpacity={0.7}>
+          <Ionicons name="trash-outline" size={16} color={colors.error} />
         </TouchableOpacity>
       </View>
     </View>
@@ -120,31 +132,39 @@ export default function FileListScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>文件管理</Text>
         <TouchableOpacity
           style={[styles.uploadBtn, uploading && styles.uploadingBtn]}
           onPress={handleUpload}
           disabled={uploading}
+          activeOpacity={0.7}
         >
-          <Text style={styles.uploadBtnText}>
-            {uploading ? '上传中...' : '+ 上传'}
-          </Text>
+          <Ionicons name="cloud-upload-outline" size={16} color={colors.textInverse} />
+          <Text style={styles.uploadBtnText}> {uploading ? '上传中...' : '上传'}</Text>
         </TouchableOpacity>
       </View>
 
       {isLoading ? (
-        <ActivityIndicator size="large" color="#1677ff" style={{ marginTop: 40 }} />
+        <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} />
       ) : (
         <FlatList
           data={files}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
-          refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} />}
+          refreshControl={
+            <RefreshControl
+              refreshing={isLoading}
+              onRefresh={refetch}
+              colors={[colors.primary]}
+            />
+          }
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={
-            <Text style={styles.emptyText}>暂无文件，点击右上角上传</Text>
+            <View style={styles.emptyState}>
+              <Ionicons name="document-outline" size={48} color={colors.border} />
+              <Text style={styles.emptyText}>暂无文件，点击右上角上传</Text>
+            </View>
           }
         />
       )}
@@ -153,34 +173,71 @@ export default function FileListScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5' },
+  container: { flex: 1, backgroundColor: colors.bgPage },
   header: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    padding: 16, backgroundColor: '#fff',
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#e0e0e0',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: spacing.lg,
+    backgroundColor: colors.bgCard,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
   },
-  headerTitle: { fontSize: 18, fontWeight: '600', color: '#1f1f1f' },
+  headerTitle: { fontSize: 18, fontWeight: '600', color: colors.textPrimary },
   uploadBtn: {
-    backgroundColor: '#1677ff', borderRadius: 8,
-    paddingHorizontal: 16, paddingVertical: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    ...shadows.sm,
   },
   uploadingBtn: { opacity: 0.6 },
-  uploadBtnText: { color: '#fff', fontSize: 14, fontWeight: '600' },
-  listContent: { padding: 16 },
+  uploadBtnText: { color: colors.textInverse, fontSize: 14, fontWeight: '600' },
+  listContent: { padding: spacing.lg, paddingBottom: spacing.xxl },
   fileItem: {
-    backgroundColor: '#fff', borderRadius: 10, padding: 14, marginBottom: 8,
+    backgroundColor: colors.bgCard,
+    borderRadius: radius.md,
+    padding: spacing.md + 2,
+    marginBottom: spacing.sm,
+    ...shadows.sm,
   },
-  fileInfo: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  fileIcon: { fontSize: 28, marginRight: 12 },
+  fileInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  fileIconBg: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.sm,
+    backgroundColor: colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.md,
+  },
   fileText: { flex: 1 },
-  fileName: { fontSize: 15, fontWeight: '500', color: '#1f1f1f' },
-  fileMeta: { fontSize: 12, color: '#8c8c8c', marginTop: 2 },
-  fileActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 16 },
-  downloadBtn: {
-    backgroundColor: '#e6f4ff', borderRadius: 6,
-    paddingHorizontal: 14, paddingVertical: 6,
+  fileName: { fontSize: 15, fontWeight: '500', color: colors.textPrimary },
+  fileMeta: { fontSize: 12, color: colors.textTertiary, marginTop: 2 },
+  fileActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    gap: spacing.lg,
   },
-  downloadText: { color: '#1677ff', fontSize: 13, fontWeight: '500' },
-  deleteBtn: { color: '#ff4d4f', fontSize: 13, paddingVertical: 6 },
-  emptyText: { textAlign: 'center', color: '#8c8c8c', fontSize: 15, marginTop: 60 },
+  downloadBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primaryLight,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs + 2,
+  },
+  downloadText: { color: colors.primary, fontSize: 13, fontWeight: '500' },
+  emptyState: {
+    alignItems: 'center',
+    paddingTop: 80,
+  },
+  emptyText: { color: colors.textTertiary, fontSize: 15, marginTop: spacing.md, textAlign: 'center' },
 });
