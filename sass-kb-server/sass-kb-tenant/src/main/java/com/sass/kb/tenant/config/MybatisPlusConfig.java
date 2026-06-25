@@ -10,7 +10,7 @@ import net.sf.jsqlparser.expression.StringValue;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.List;
+import java.util.Set;
 
 @Configuration
 public class MybatisPlusConfig {
@@ -46,7 +46,10 @@ public class MybatisPlusConfig {
         @Override
         public boolean ignoreTable(String tableName) {
             // 租户表、用户表不需要租户隔离
-            return List.of("tenant", "user").contains(tableName);
+            if (tableName == null) return false;
+            // 归一化：去除 JSQLParser 可能保留的 SQL 标识符引号（PostgreSQL "、MySQL `）
+            String normalized = tableName.replace("\"", "").replace("`", "");
+            return Set.of("tenant", "user").contains(normalized);
         }
     }
 }

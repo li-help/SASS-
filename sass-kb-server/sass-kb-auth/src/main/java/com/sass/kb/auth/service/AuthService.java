@@ -15,6 +15,7 @@ import com.sass.kb.tenant.entity.Tenant;
 import com.sass.kb.tenant.mapper.TenantMapper;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -74,44 +75,11 @@ public class AuthService {
     @Transactional
     public String register(RegisterRequest req) {
         // 1. 确定租户
-        String tenantId;
-        if (req.getCompanyName() != null && !req.getCompanyName().isBlank()) {
-            // 检查同名租户
-            Tenant existingTenant = tenantMapper.selectOne(
-                    new LambdaQueryWrapper<Tenant>().eq(Tenant::getName, req.getCompanyName()));
-            if (existingTenant != null) {
-                tenantId = existingTenant.getId();
-            } else {
-                Tenant tenant = new Tenant();
-                tenant.setId(IdUtil.fastSimpleUUID());
-                tenant.setName(req.getCompanyName());
-                tenant.setStatus("active");
-                tenantMapper.insert(tenant);
-                tenantId = tenant.getId();
-            }
-        } else {
-            // 使用默认租户，不存在则创建
-            Tenant defaultTenant = tenantMapper.selectOne(
-                    new LambdaQueryWrapper<Tenant>().eq(Tenant::getName, "默认租户"));
-            if (defaultTenant == null) {
-                defaultTenant = new Tenant();
-                defaultTenant.setId(IdUtil.fastSimpleUUID());
-                defaultTenant.setName("默认租户");
-                defaultTenant.setStatus("active");
-                tenantMapper.insert(defaultTenant);
-            }
-            tenantId = defaultTenant.getId();
-        }
+        String tenantName = (req.getCompanyName() != null && !req.getCompanyName().isBlank())
+                ? req.getCompanyName() : "默认租户";
+        String tenantId = resolveTenantId(tenantName);
 
-        // 2. 检查用户名在租户内唯一
-        Long count = userMapper.selectCount(new LambdaQueryWrapper<User>()
-                .eq(User::getTenantId, tenantId)
-                .eq(User::getUsername, req.getUsername()));
-        if (count > 0) {
-            throw new BizException("该用户名已存在");
-        }
-
-        // 3. 创建用户
+        // 2. 创建用户（唯一索引保证租户内用户名不重复）
         User user = new User();
         user.setId(IdUtil.fastSimpleUUID());
         user.setTenantId(tenantId);
@@ -122,9 +90,27 @@ public class AuthService {
         user.setPhone(req.getPhone());
         user.setStatus("active");
         user.setIsSuperAdmin(false);
-        userMapper.insert(user);
+        try {
+            userMapper.insert(user);
+        } catch (DuplicateKeyException e) {
+            throw new BizException("该用户名已存在");
+        }
 
         return user.getRealName();
+    }
+
+    private String resolveTenantId(String tenantName) {
+        Tenant existing = tenantMapper.selectOne(
+                new LambdaQueryWrapper<Tenant>().eq(Tenant::getName, tenantName));
+        if (existing != null) {
+            return existing.getId();
+        }
+        Tenant tenant = new Tenant();
+        tenant.setId(IdUtil.fastSimpleUUID());
+        tenant.setName(tenantName);
+        tenant.setStatus("active");
+        tenantMapper.insert(tenant);
+        return tenant.getId();
     }
 
     private TokenResponse buildLoginResult(User user) {

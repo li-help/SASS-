@@ -26,12 +26,17 @@ public class PermissionService {
     private final ResourceParentResolver resourceParentResolver;
 
     private Cache<String, Boolean> permissionCache;
+    private Cache<String, Role> roleCache;
 
     @PostConstruct
     public void init() {
         permissionCache = Caffeine.newBuilder()
                 .expireAfterWrite(5, TimeUnit.MINUTES)
                 .maximumSize(10_000)
+                .build();
+        roleCache = Caffeine.newBuilder()
+                .expireAfterWrite(15, TimeUnit.MINUTES)
+                .maximumSize(1_000)
                 .build();
     }
 
@@ -105,7 +110,7 @@ public class PermissionService {
                                        String action, Set<String> visited) {
         if (!visited.add(roleId)) return false; // 循环检测
 
-        Role role = roleMapper.selectById(roleId);
+        Role role = roleCache.get(roleId, roleMapper::selectById);
         if (role == null) return false;
 
         // 检查当前角色的权限
@@ -127,6 +132,7 @@ public class PermissionService {
 
     public void invalidateCache() {
         permissionCache.invalidateAll();
+        roleCache.invalidateAll();
     }
 
     public void broadcastInvalidation(String tenantId, String resourceType, String resourceId) {

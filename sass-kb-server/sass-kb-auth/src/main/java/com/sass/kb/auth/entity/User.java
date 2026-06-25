@@ -2,6 +2,7 @@ package com.sass.kb.auth.entity;
 
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -14,6 +15,7 @@ public class User {
     private String id;
     private String tenantId;
     private String username;
+    @JsonIgnore
     private String passwordHash;
     private String realName;
     private String email;

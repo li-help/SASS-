@@ -3,6 +3,7 @@ package com.sass.kb.auth.util;
 import com.sass.kb.auth.config.JwtProperties;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -16,9 +17,15 @@ import java.util.UUID;
 public class JwtUtil {
 
     private final JwtProperties jwtProperties;
+    private SecretKey signingKey;
+
+    @PostConstruct
+    void init() {
+        signingKey = Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes(StandardCharsets.UTF_8));
+    }
 
     private SecretKey getKey() {
-        return Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes(StandardCharsets.UTF_8));
+        return signingKey;
     }
 
     public String generateAccessToken(String userId, String tenantId) {

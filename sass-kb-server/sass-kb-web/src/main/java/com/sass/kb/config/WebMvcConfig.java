@@ -2,7 +2,6 @@ package com.sass.kb.config;
 
 import com.sass.kb.auth.interceptor.AuthInterceptor;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
@@ -14,9 +13,6 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     private final AuthInterceptor authInterceptor;
     private final RateLimitInterceptor rateLimitInterceptor;
-
-    @Value("${app.cors.allowed-origins:http://localhost:5173}")
-    private String allowedOrigins;
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
@@ -36,7 +32,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .addPathPatterns("/api/**")
                 .excludePathPatterns("/api/auth/login", "/api/auth/refresh", "/api/auth/register",
                         "/v3/api-docs/**", "/doc.html", "/swagger-ui/**",
-                        "/actuator/**")
+                        "/actuator/**", "/api/test/**")
                 .order(1);
     }
 }
