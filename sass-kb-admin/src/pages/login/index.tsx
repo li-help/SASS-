@@ -73,7 +73,7 @@ export default function LoginPage() {
           企业知识库管理系统
         </Text>
         <div style={{ marginTop: 48, zIndex: 1 }}>
-          {['高效文档协作', '灵活权限管控', '安全知识沉淀'].map((text, i) => (
+          {['高效文档协作', '灵活权限管控', '安全知识沉淀'].map((text) => (
             <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, color: 'rgba(255,255,255,0.55)' }}>
               <div style={{
                 width: 6, height: 6, borderRadius: '50%',
