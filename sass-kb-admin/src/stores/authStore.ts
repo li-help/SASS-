@@ -21,8 +21,7 @@ export const useAuthStore = create<AuthState>()(
       userId: null,
       realName: null,
       login: async (account, password) => {
-        const res = await api.post('/auth/login', { account, password });
-        const json = res;
+        const json: any = await api.post('/auth/login', { account, password });
         if (json.code !== 200) throw new Error(json.message);
         const d = json.data;
         set({
