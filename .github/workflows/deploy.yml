@@ -113,19 +113,27 @@ jobs:
           name: server-jar
           path: deploy/server/
 
-      - name: 部署到服务器
-        uses: easingthemes/ssh-deploy@v5
-        with:
-          SSH_PRIVATE_KEY: ${{ secrets.SERVER_SSH_KEY }}
-          ARGS: '-avz'
-          SOURCE: 'deploy/'
-          REMOTE_HOST: ${{ secrets.SERVER_HOST }}
-          REMOTE_USER: ${{ secrets.SERVER_USER }}
-          TARGET: '/home/${{ secrets.SERVER_USER }}/deploy/'
-          SCRIPT_BEFORE: |
-            sudo systemctl stop sass-kb-server || true
-          SCRIPT_AFTER: |
-            sudo mv /home/${{ secrets.SERVER_USER }}/deploy/server/*.jar /opt/sass-kb/app.jar
-            sudo mv /home/${{ secrets.SERVER_USER }}/deploy/admin/* /var/www/sass-kb-admin/
-            sudo systemctl start sass-kb-server
-            echo "部署完成"
+      - name: 配置 SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SERVER_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          echo "Host server" >> ~/.ssh/config
+          echo "  HostName ${{ secrets.SERVER_HOST }}" >> ~/.ssh/config
+          echo "  User ${{ secrets.SERVER_USER }}" >> ~/.ssh/config
+          echo "  IdentityFile ~/.ssh/id_ed25519" >> ~/.ssh/config
+          echo "  StrictHostKeyChecking no" >> ~/.ssh/config
+
+      - name: 上传产物到服务器
+        run: |
+          scp -r deploy/admin server:/home/${{ secrets.SERVER_USER }}/deploy/admin/
+          scp deploy/server/*.jar server:/home/${{ secrets.SERVER_USER }}/deploy/server/
+
+      - name: 停服上传重启
+        run: |
+          ssh server "sudo systemctl stop sass-kb-server || true"
+          ssh server "sudo mkdir -p /opt/sass-kb /var/www/sass-kb-admin"
+          ssh server "sudo mv /home/${{ secrets.SERVER_USER }}/deploy/server/*.jar /opt/sass-kb/app.jar"
+          ssh server "sudo cp -r /home/${{ secrets.SERVER_USER }}/deploy/admin/* /var/www/sass-kb-admin/"
+          ssh server "sudo systemctl start sass-kb-server"
+          echo "部署完成"
