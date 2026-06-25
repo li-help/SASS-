@@ -1,0 +1,131 @@
+# ============================================================
+# SASS 知识平台 — 自动构建部署流水线（国内优化版）
+# ============================================================
+name: Build and Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  JAVA_VERSION: '17'
+  NODE_VERSION: '20'
+
+jobs:
+
+  # ==========================================================
+  # 1. 构建管理后台前端（sass-kb-admin）
+  # ==========================================================
+  build-admin:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sass-kb-admin
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: sass-kb-admin/package-lock.json
+
+      - name: 切换淘宝镜像
+        run: npm config set registry https://registry.npmmirror.com
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 构建
+        run: npm run build
+        # tsc -b && vite build → 产出到 sass-kb-admin/dist/
+
+      - name: 上传产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-dist
+          path: sass-kb-admin/dist/
+
+  # ==========================================================
+  # 2. 构建后端（Spring Boot JAR）
+  # ==========================================================
+  build-server:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v4
+
+      - name: 安装 JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: 配置阿里云 Maven 镜像
+        run: |
+          mkdir -p ~/.m2
+          cat > ~/.m2/settings.xml << 'XML'
+          <settings>
+            <mirrors>
+              <mirror>
+                <id>aliyun</id>
+                <name>阿里云 Maven 镜像</name>
+                <url>https://maven.aliyun.com/repository/public</url>
+                <mirrorOf>central</mirrorOf>
+              </mirror>
+            </mirrors>
+          </settings>
+          XML
+
+      - name: 构建 JAR
+        run: |
+          cd sass-kb-server
+          mvn clean package -DskipTests -q
+
+      - name: 上传产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-jar
+          path: sass-kb-server/sass-kb-web/target/*.jar
+
+  # ==========================================================
+  # 3. 部署（等前端和后端都构建成功）
+  # ==========================================================
+  deploy:
+    needs: [build-admin, build-server]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: 取回前端产物
+        uses: actions/download-artifact@v4
+        with:
+          name: admin-dist
+          path: deploy/admin/
+
+      - name: 取回后端 JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: server-jar
+          path: deploy/server/
+
+      - name: 部署到服务器
+        uses: easingthemes/ssh-deploy@v5
+        with:
+          SSH_PRIVATE_KEY: ${{ secrets.SERVER_SSH_KEY }}
+          ARGS: '-avz'
+          SOURCE: 'deploy/'
+          REMOTE_HOST: ${{ secrets.SERVER_HOST }}
+          REMOTE_USER: ${{ secrets.SERVER_USER }}
+          TARGET: '/home/${{ secrets.SERVER_USER }}/deploy/'
+          SCRIPT_BEFORE: |
+            sudo systemctl stop sass-kb-server || true
+          SCRIPT_AFTER: |
+            sudo mv /home/${{ secrets.SERVER_USER }}/deploy/server/*.jar /opt/sass-kb/app.jar
+            sudo mv /home/${{ secrets.SERVER_USER }}/deploy/admin/* /var/www/sass-kb-admin/
+            sudo systemctl start sass-kb-server
+            echo "部署完成"
