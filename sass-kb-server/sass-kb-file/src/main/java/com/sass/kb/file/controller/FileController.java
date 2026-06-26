@@ -58,8 +58,13 @@ public class FileController {
 
     @GetMapping("/{id}/download")
     public R<String> download(@PathVariable String id) {
-        String url = fileService.getDownloadUrl(id);
-        return R.ok(url);
+        // 返回可通过 Nginx 代理访问的相对路径，而非 MinIO 直连地址
+        return R.ok("/api/file/" + id + "/download-file");
+    }
+
+    @GetMapping("/{id}/download-file")
+    public void downloadFile(@PathVariable String id, jakarta.servlet.http.HttpServletResponse response) {
+        fileService.downloadToStream(id, response);
     }
 
     @DeleteMapping("/{id}")

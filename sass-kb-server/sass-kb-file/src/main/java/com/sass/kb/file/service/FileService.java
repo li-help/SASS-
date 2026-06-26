@@ -9,15 +9,21 @@ import com.sass.kb.file.config.MinioProperties;
 import com.sass.kb.file.entity.FileAsset;
 import com.sass.kb.file.mapper.FileAssetMapper;
 import com.sass.kb.tenant.context.TenantContext;
+import io.minio.GetObjectArgs;
 import io.minio.GetPresignedObjectUrlArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import io.minio.RemoveObjectArgs;
 import io.minio.http.Method;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -105,6 +111,23 @@ public class FileService {
         qw.orderByDesc(FileAsset::getCreatedAt);
         Page<FileAsset> p = fileAssetMapper.selectPage(new Page<>(page, size), qw);
         return new PageResult<>(p.getRecords(), p.getTotal(), page, size);
+    }
+
+    public void downloadToStream(String id, HttpServletResponse response) {
+        FileAsset asset = getById(id);
+        try (InputStream stream = minioClient.getObject(GetObjectArgs.builder()
+                .bucket(minioProperties.getBucket())
+                .object(asset.getStorePath())
+                .build())) {
+            response.setContentType(asset.getMimeType() != null ? asset.getMimeType() : "application/octet-stream");
+            response.setHeader("Content-Disposition",
+                    "attachment; filename*=UTF-8''" + URLEncoder.encode(asset.getOriginalName(), StandardCharsets.UTF_8));
+            OutputStream out = response.getOutputStream();
+            stream.transferTo(out);
+            out.flush();
+        } catch (Exception e) {
+            throw new BizException("文件下载失败: " + e.getMessage());
+        }
     }
 
     public void deleteBySpaceId(String spaceId) {
