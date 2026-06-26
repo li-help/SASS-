@@ -12,6 +12,7 @@ import com.sass.kb.file.entity.FileAsset;
 import com.sass.kb.file.mapper.FileAssetMapper;
 import com.sass.kb.tenant.context.TenantContext;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -32,6 +33,7 @@ public class DashboardController {
     private final UserMapper userMapper;
 
     @GetMapping("/stats")
+    @Cacheable(value = "dashboard:stats", key = "T(com.sass.kb.tenant.context.TenantContext).getCurrentTenantId() ?: 'global'")
     public R<Map<String, Object>> stats() {
         String tenantId = TenantContext.getCurrentTenantId();
 

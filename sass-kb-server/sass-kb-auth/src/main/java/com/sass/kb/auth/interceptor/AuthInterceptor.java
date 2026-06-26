@@ -1,8 +1,10 @@
 package com.sass.kb.auth.interceptor;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sass.kb.auth.entity.User;
 import com.sass.kb.auth.mapper.UserMapper;
 import com.sass.kb.auth.util.JwtUtil;
+import com.sass.kb.common.result.R;
 import com.sass.kb.tenant.context.TenantContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -17,12 +19,17 @@ public class AuthInterceptor implements HandlerInterceptor {
 
     private final JwtUtil jwtUtil;
     private final UserMapper userMapper;
+    private final ObjectMapper objectMapper;
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
+        // 放行 CORS 预检请求（OPTIONS 不带 Authorization 头）
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            return true;
+        }
         String token = extractToken(request);
         if (token == null) {
-            response.setStatus(401);
+            writeUnauthorized(response, "未登录，请先登录");
             return false;
         }
         try {
@@ -36,7 +43,7 @@ public class AuthInterceptor implements HandlerInterceptor {
             request.setAttribute("isSuperAdmin", user != null && Boolean.TRUE.equals(user.getIsSuperAdmin()));
             return true;
         } catch (Exception e) {
-            response.setStatus(401);
+            writeUnauthorized(response, "令牌无效或已过期");
             return false;
         }
     }
@@ -53,5 +60,14 @@ public class AuthInterceptor implements HandlerInterceptor {
             return bearer.substring(7);
         }
         return null;
+    }
+
+    private void writeUnauthorized(HttpServletResponse response, String message) {
+        response.setStatus(401);
+        response.setContentType("application/json;charset=UTF-8");
+        try {
+            response.getWriter().write(objectMapper.writeValueAsString(R.fail(401, message)));
+        } catch (Exception ignored) {
+        }
     }
 }

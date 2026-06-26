@@ -15,14 +15,54 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// GET 请求去重：相同请求 2 秒内不重复发送
+const inflight = new Map<string, { promise: Promise<any>; ts: number }>();
+const DEDUP_MS = 2000;
+
+api.interceptors.request.use((config) => {
+  if (config.method === 'get') {
+    const key = `${config.url}:${JSON.stringify(config.params || '')}`;
+    const cached = inflight.get(key);
+    if (cached && Date.now() - cached.ts < DEDUP_MS) {
+      return Promise.reject({ __dedup: true, __promise: cached.promise });
+    }
+    inflight.delete(key);
+  }
+  return config;
+});
+
+// 定期清理过期缓存
+setInterval(() => {
+  const now = Date.now();
+  for (const [k, v] of inflight) {
+    if (now - v.ts > DEDUP_MS * 2) inflight.delete(k);
+  }
+}, 10_000);
+
 // 响应拦截：401 自动刷新或跳登录
 let isRefreshing = false;
 let refreshQueue: Array<(token: string) => void> = [];
 
 api.interceptors.response.use(
-  (res) => res.data,
+  (res) => {
+    // 记录 GET 响应用于去重
+    const config = res.config as any;
+    if (config.method === 'get') {
+      const key = `${config.url}:${JSON.stringify(config.params || '')}`;
+      const entry = inflight.get(key);
+      if (entry) entry.ts = Date.now();
+    }
+    return res.data;
+  },
   async (error) => {
+    // 去重请求：复用已有 Promise
+    if (error?.__dedup) {
+      return error.__promise;
+    }
+
     const original = error.config;
+    if (!original) return Promise.reject(error);
+
     if (error.response?.status === 401 && !original._retry) {
       const { refreshToken, setTokens, logout } = useAuthStore.getState();
       if (!refreshToken) { logout(); return Promise.reject(error); }
