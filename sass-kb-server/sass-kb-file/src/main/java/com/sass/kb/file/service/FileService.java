@@ -114,7 +114,11 @@ public class FileService {
     }
 
     public void downloadToStream(String id, HttpServletResponse response) {
-        FileAsset asset = getById(id);
+        // 下载接口免鉴权，需要绕过租户过滤直接查
+        FileAsset asset = fileAssetMapper.selectByIdWithoutTenant(id);
+        if (asset == null) {
+            throw new BizException(404, "文件不存在");
+        }
         try (InputStream stream = minioClient.getObject(GetObjectArgs.builder()
                 .bucket(minioProperties.getBucket())
                 .object(asset.getStorePath())
