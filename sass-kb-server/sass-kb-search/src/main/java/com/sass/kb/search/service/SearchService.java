@@ -1,79 +1,71 @@
 package com.sass.kb.search.service;
 
-import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
-import co.elastic.clients.elasticsearch._types.query_dsl.Query;
-import co.elastic.clients.elasticsearch._types.query_dsl.TextQueryType;
-import com.sass.kb.search.model.DocDocument;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.sass.kb.doc.entity.Document;
+import com.sass.kb.doc.mapper.DocumentMapper;
 import com.sass.kb.tenant.context.TenantContext;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.elasticsearch.client.elc.NativeQuery;
-import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
-import org.springframework.data.elasticsearch.core.SearchHits;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class SearchService {
 
-    private final ElasticsearchOperations elasticsearchOperations;
+    private final DocumentMapper documentMapper;
 
     public Map<String, Object> search(String keyword, String spaceId, int page, int size) {
         String tenantId = TenantContext.getCurrentTenantId();
 
-        // 构建 Bool Query
-        BoolQuery.Builder boolBuilder = new BoolQuery.Builder();
+        LambdaQueryWrapper<Document> wrapper = new LambdaQueryWrapper<>();
 
-        // 多字段搜索
-        boolBuilder.must(Query.of(q -> q.multiMatch(mm -> mm
-                .query(keyword)
-                .fields("title^3", "contentHtml")
-                .type(TextQueryType.BestFields))));
+        // 关键词搜索：在标题和内容中搜索
+        if (StringUtils.hasText(keyword)) {
+            wrapper.and(w -> w
+                    .like(Document::getTitle, keyword)
+                    .or()
+                    .like(Document::getContentHtml, keyword));
+        }
 
         // 只搜已发布文档
-        boolBuilder.filter(Query.of(q -> q.term(t -> t.field("status").value("published"))));
-
-        // 租户过滤
-        BoolQuery.Builder tenantBuilder = new BoolQuery.Builder();
-        if (tenantId != null && !tenantId.isBlank()) {
-            tenantBuilder.should(Query.of(q -> q.term(t -> t.field("tenantId").value(""))));
-            tenantBuilder.should(Query.of(q -> q.term(t -> t.field("tenantId").value(tenantId))));
-        } else {
-            tenantBuilder.should(Query.of(q -> q.term(t -> t.field("tenantId").value(""))));
-        }
-        boolBuilder.filter(Query.of(q -> q.bool(tenantBuilder.build())));
+        wrapper.eq(Document::getStatus, "published");
 
         // 空间过滤
-        if (spaceId != null && !spaceId.isBlank()) {
-            boolBuilder.filter(Query.of(q -> q.term(t -> t.field("spaceId").value(spaceId))));
+        if (StringUtils.hasText(spaceId)) {
+            wrapper.eq(Document::getSpaceId, spaceId);
         }
 
-        NativeQuery query = NativeQuery.builder()
-                .withQuery(Query.of(q -> q.bool(boolBuilder.build())))
-                .withPageable(PageRequest.of(page - 1, size))
-                .withTrackTotalHits(true)
-                .build();
+        // 按更新时间倒序
+        wrapper.orderByDesc(Document::getUpdatedAt);
 
-        SearchHits<DocDocument> hits = elasticsearchOperations.search(query, DocDocument.class);
+        Page<Document> result = documentMapper.selectPage(
+                Page.of(page, size), wrapper);
 
-        List<Map<String, Object>> records = new ArrayList<>();
-        hits.forEach(hit -> {
+        List<Map<String, Object>> records = result.getRecords().stream().map(doc -> {
             Map<String, Object> item = new LinkedHashMap<>();
-            item.put("id", hit.getContent().getId());
-            item.put("title", hit.getContent().getTitle());
-            item.put("spaceId", hit.getContent().getSpaceId());
-            item.put("updatedAt", hit.getContent().getUpdatedAt());
-            item.put("score", hit.getScore());
-            records.add(item);
-        });
+            item.put("id", doc.getId());
+            item.put("title", doc.getTitle());
+            item.put("spaceId", doc.getSpaceId());
+            item.put("updatedAt", doc.getUpdatedAt());
+            // 简单评分：标题匹配权重更高
+            float score = 1.0f;
+            if (StringUtils.hasText(keyword) && doc.getTitle() != null
+                    && doc.getTitle().toLowerCase().contains(keyword.toLowerCase())) {
+                score = 3.0f;
+            }
+            item.put("score", score);
+            return item;
+        }).collect(Collectors.toList());
 
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("records", records);
-        result.put("total", hits.getTotalHits());
-        result.put("page", page);
-        result.put("size", size);
-        return result;
+        Map<String, Object> resultMap = new LinkedHashMap<>();
+        resultMap.put("records", records);
+        resultMap.put("total", result.getTotal());
+        resultMap.put("page", page);
+        resultMap.put("size", size);
+        return resultMap;
     }
 }

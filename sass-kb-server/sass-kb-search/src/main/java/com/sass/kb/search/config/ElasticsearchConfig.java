@@ -1,10 +1,12 @@
 package com.sass.kb.search.config;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.elasticsearch.client.ClientConfiguration;
 import org.springframework.data.elasticsearch.client.elc.ElasticsearchConfiguration;
 
 @Configuration
+@ConditionalOnProperty(name = "app.search.engine", havingValue = "elasticsearch")
 public class ElasticsearchConfig extends ElasticsearchConfiguration {
 
     @Override
