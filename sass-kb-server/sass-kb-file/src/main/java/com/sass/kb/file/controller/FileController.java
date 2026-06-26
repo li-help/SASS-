@@ -57,13 +57,24 @@ public class FileController {
     }
 
     @GetMapping("/{id}/download")
-    public R<String> download(@PathVariable String id) {
-        // 返回可通过 Nginx 代理访问的相对路径，而非 MinIO 直连地址
-        return R.ok("/api/file/" + id + "/download-file");
+    public R<String> download(@PathVariable String id, HttpServletRequest request) {
+        // 带上 token 参数，浏览器直接打开也能通过鉴权
+        String token = request.getHeader("Authorization");
+        if (token != null && token.startsWith("Bearer ")) {
+            token = token.substring(7);
+        }
+        String url = "/api/file/" + id + "/download-file";
+        if (token != null) {
+            url += "?token=" + token;
+        }
+        return R.ok(url);
     }
 
     @GetMapping("/{id}/download-file")
-    public void downloadFile(@PathVariable String id, jakarta.servlet.http.HttpServletResponse response) {
+    public void downloadFile(@PathVariable String id,
+                             @RequestParam(required = false) String token,
+                             jakarta.servlet.http.HttpServletResponse response) {
+        // token 已通过 URL 参数传递，浏览器直接打开也能下载
         fileService.downloadToStream(id, response);
     }
 
