@@ -9,6 +9,8 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 import java.util.UUID;
 
@@ -21,7 +23,15 @@ public class JwtUtil {
 
     @PostConstruct
     void init() {
-        signingKey = Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes(StandardCharsets.UTF_8));
+        // 无论配置的 secret 多长，都通过 SHA-256 哈希得到固定的 256-bit 密钥
+        byte[] keyBytes;
+        try {
+            MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
+            keyBytes = sha256.digest(jwtProperties.getSecret().getBytes(StandardCharsets.UTF_8));
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("JWT key derivation failed", e);
+        }
+        signingKey = Keys.hmacShaKeyFor(keyBytes);
     }
 
     private SecretKey getKey() {
