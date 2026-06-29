@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { Typography, Button, Card, List, Modal, Form, Input, message, Tag, Spin } from 'antd';
-import { PlusOutlined, FolderOpenOutlined, EditOutlined, DeleteOutlined, SafetyOutlined } from '@ant-design/icons';
+import { useState, useMemo } from 'react';
+import { Typography, Button, Card, List, Modal, Form, Input, message, Tag, Spin, Select } from 'antd';
+import { PlusOutlined, FolderOpenOutlined, EditOutlined, DeleteOutlined, SafetyOutlined, SearchOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { spaceApi } from '@/services/docService';
@@ -13,6 +13,7 @@ export default function SpacePage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Space | null>(null);
   const [permTarget, setPermTarget] = useState<{ type: 'space'; id: string; name: string } | null>(null);
+  const [searchText, setSearchText] = useState('');
   const [form] = Form.useForm();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -45,6 +46,15 @@ export default function SpacePage() {
 
   const spaces = data?.data || [];
 
+  const filteredSpaces = useMemo(() => {
+    if (!searchText.trim()) return spaces;
+    const kw = searchText.toLowerCase();
+    return spaces.filter((s: Space) =>
+      s.name.toLowerCase().includes(kw) ||
+      (s.description || '').toLowerCase().includes(kw)
+    );
+  }, [spaces, searchText]);
+
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
@@ -55,12 +65,23 @@ export default function SpacePage() {
         <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>新建空间</Button>
       </div>
 
+      <div style={{ marginBottom: 16 }}>
+        <Input
+          prefix={<SearchOutlined />}
+          placeholder="搜索空间名称或描述"
+          style={{ width: 300 }}
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          allowClear
+        />
+      </div>
+
       {isLoading ? (
         <Spin size="large" style={{ display: 'block', margin: '60px auto' }} />
       ) : (
         <List
           grid={{ gutter: 24, xs: 1, sm: 2, md: 3, lg: 3, xl: 4, xxl: 4 }}
-          dataSource={spaces}
+          dataSource={filteredSpaces}
           renderItem={(space: Space) => (
             <List.Item>
               <Card
@@ -119,6 +140,14 @@ export default function SpacePage() {
           </Form.Item>
           <Form.Item name="description" label="描述">
             <Input.TextArea rows={3} placeholder="空间的简介" />
+          </Form.Item>
+          <Form.Item name="type" label="类型" initialValue="public">
+            <Select
+              options={[
+                { label: '公开', value: 'public' },
+                { label: '私有', value: 'private' },
+              ]}
+            />
           </Form.Item>
           <Form.Item name="icon" label="图标">
             <Input placeholder="Ant Design 图标名称，如 FolderOpenOutlined" />

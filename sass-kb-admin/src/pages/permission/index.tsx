@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Table, Select, Tag, Space, Button, message, Popconfirm, Typography, Card, Row, Col } from 'antd';
-import { DeleteOutlined, ReloadOutlined } from '@ant-design/icons';
+import { Table, Select, Tag, Space, Button, message, Popconfirm, Typography, Card, Row, Col, Modal, Form } from 'antd';
+import { DeleteOutlined, ReloadOutlined, PlusOutlined, EditOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { permissionApi, roleApi } from '@/services/roleApi';
 import { userApi } from '@/services/authService';
 import type { PermissionRule } from '@/services/roleApi';
+import type { User } from '@/types/user';
 
 const { Title, Text } = Typography;
 
@@ -13,6 +14,9 @@ export default function PermissionPage() {
   const [subjectType, setSubjectType] = useState<string>('');
   const [effect, setEffect] = useState<string>('');
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<PermissionRule | null>(null);
+  const [form] = Form.useForm();
   const queryClient = useQueryClient();
 
   // Load all rules
@@ -41,11 +45,11 @@ export default function PermissionPage() {
       message.success('已删除');
       queryClient.invalidateQueries({ queryKey: ['permission-rules'] });
     },
+    onError: () => message.error('删除失败'),
   });
 
   const batchDeleteMut = useMutation({
     mutationFn: (ids: string[]) => {
-      // Delete one by one since batch endpoint isn't in the service yet
       return Promise.all(ids.map(id => permissionApi.deleteRule(id)));
     },
     onSuccess: () => {
@@ -53,7 +57,35 @@ export default function PermissionPage() {
       setSelectedRowKeys([]);
       queryClient.invalidateQueries({ queryKey: ['permission-rules'] });
     },
+    onError: () => message.error('批量删除失败'),
   });
+
+  const createMut = useMutation({
+    mutationFn: (values: Partial<PermissionRule>) => permissionApi.createRule(values),
+    onSuccess: () => { message.success('规则已创建'); setModalOpen(false); queryClient.invalidateQueries({ queryKey: ['permission-rules'] }); },
+    onError: () => message.error('创建失败'),
+  });
+
+  const updateMut = useMutation({
+    mutationFn: ({ id, ...values }: Partial<PermissionRule> & { id: string }) => permissionApi.updateRule(id, values),
+    onSuccess: () => { message.success('规则已更新'); setModalOpen(false); queryClient.invalidateQueries({ queryKey: ['permission-rules'] }); },
+    onError: () => message.error('更新失败'),
+  });
+
+  const openCreate = () => { setEditing(null); form.resetFields(); setModalOpen(true); };
+  const openEdit = (record: PermissionRule) => {
+    setEditing(record);
+    form.setFieldsValue(record);
+    setModalOpen(true);
+  };
+
+  const handleFinish = (values: any) => {
+    if (editing) {
+      updateMut.mutate({ id: editing.id, ...values });
+    } else {
+      createMut.mutate(values);
+    }
+  };
 
   const allRules = rulesData?.data || [];
   const users = usersData?.data?.records || [];
@@ -65,7 +97,7 @@ export default function PermissionPage() {
     : allRules;
 
   const getUserName = (id: string) => {
-    const u = users.find((u: any) => u.id === id);
+    const u = users.find((u: User) => u.id === id);
     return u ? `${u.realName || u.username}` : id.substring(0, 8);
   };
 
@@ -109,11 +141,14 @@ export default function PermissionPage() {
       ),
     },
     {
-      title: '操作', key: 'actions', width: 80,
+      title: '操作', key: 'actions', width: 120,
       render: (_: any, r: PermissionRule) => (
-        <Popconfirm title="确定删除此规则？" onConfirm={() => deleteMut.mutate(r.id)}>
-          <Button type="link" size="small" danger icon={<DeleteOutlined />} />
-        </Popconfirm>
+        <Space size={0}>
+          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(r)} />
+          <Popconfirm title="确定删除此规则？" onConfirm={() => deleteMut.mutate(r.id)}>
+            <Button type="link" size="small" danger icon={<DeleteOutlined />} />
+          </Popconfirm>
+        </Space>
       ),
     },
   ];
@@ -136,6 +171,7 @@ export default function PermissionPage() {
               </Button>
             </Popconfirm>
           )}
+          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>新建规则</Button>
           <Button icon={<ReloadOutlined />}
             onClick={() => queryClient.invalidateQueries({ queryKey: ['permission-rules'] })}>
             刷新
@@ -159,7 +195,6 @@ export default function PermissionPage() {
                 { label: '文件夹 (folder)', value: 'folder' },
                 { label: '文档 (doc)', value: 'doc' },
                 { label: '文件 (file)', value: 'file' },
-                { label: '角色 (role)', value: 'role' },
               ]}
             />
           </Col>
@@ -217,6 +252,72 @@ export default function PermissionPage() {
         size="middle"
         locale={{ emptyText: '暂无权限规则' }}
       />
+
+      {/* Create/Edit Rule Modal */}
+      <Modal
+        title={editing ? '编辑权限规则' : '新建权限规则'}
+        open={modalOpen}
+        onCancel={() => setModalOpen(false)}
+        onOk={() => form.submit()}
+        confirmLoading={createMut.isPending || updateMut.isPending}
+        width={500}
+      >
+        <Form form={form} layout="vertical" onFinish={handleFinish}
+          initialValues={{ effect: 'allow', action: 'read' }}>
+          <Form.Item name="subjectType" label="主体类型" rules={[{ required: true, message: '请选择主体类型' }]}>
+            <Select
+              options={[
+                { label: '用户', value: 'user' },
+                { label: '角色', value: 'role' },
+              ]}
+            />
+          </Form.Item>
+          <Form.Item name="subjectId" label="主体ID" rules={[{ required: true, message: '请输入主体ID' }]}>
+            <Select
+              showSearch
+              placeholder="选择用户或角色"
+              filterOption={(input, option) =>
+                (option?.label as string || '').toLowerCase().includes(input.toLowerCase())
+              }
+              options={[
+                ...users.map((u: User) => ({ label: `${u.realName || u.username} (用户)`, value: u.id })),
+                ...roles.map((r: any) => ({ label: `${r.name} (角色)`, value: r.id })),
+              ]}
+            />
+          </Form.Item>
+          <Form.Item name="targetType" label="目标类型" rules={[{ required: true, message: '请选择目标类型' }]}>
+            <Select
+              options={[
+                { label: '空间', value: 'space' },
+                { label: '文件夹', value: 'folder' },
+                { label: '文档', value: 'doc' },
+                { label: '文件', value: 'file' },
+              ]}
+            />
+          </Form.Item>
+          <Form.Item name="targetId" label="目标ID（留空表示全局）">
+            <Input placeholder="可选，留空表示作用于所有该类型资源" />
+          </Form.Item>
+          <Form.Item name="action" label="操作" rules={[{ required: true, message: '请选择操作' }]}>
+            <Select
+              options={[
+                { label: '读取 (read)', value: 'read' },
+                { label: '写入 (write)', value: 'write' },
+                { label: '删除 (delete)', value: 'delete' },
+                { label: '管理 (admin)', value: 'admin' },
+              ]}
+            />
+          </Form.Item>
+          <Form.Item name="effect" label="效果" rules={[{ required: true, message: '请选择效果' }]}>
+            <Select
+              options={[
+                { label: '允许 (allow)', value: 'allow' },
+                { label: '拒绝 (deny)', value: 'deny' },
+              ]}
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 }

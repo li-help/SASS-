@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Typography, Button, Table, Upload, message, Input,
   Space, Tag, Popconfirm,
@@ -7,6 +7,7 @@ import {
   UploadOutlined, DownloadOutlined, DeleteOutlined,
   SearchOutlined, FileOutlined, SafetyOutlined,
 } from '@ant-design/icons';
+import type { ColumnsType } from 'antd/es/table';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fileApi } from '@/services/fileService';
 import type { FileAsset } from '@/services/fileService';
@@ -27,6 +28,15 @@ export default function FilePage() {
   const [permTarget, setPermTarget] = useState<{ type: 'file'; id: string; name: string } | null>(null);
   const queryClient = useQueryClient();
 
+  // 防抖搜索
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setKeyword(searchText);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchText]);
+
   const { data, isLoading } = useQuery({
     queryKey: ['files', page, keyword],
     queryFn: () => fileApi.list({ page, size: 20, keyword: keyword || undefined }),
@@ -35,6 +45,7 @@ export default function FilePage() {
   const deleteMut = useMutation({
     mutationFn: (id: string) => fileApi.delete(id),
     onSuccess: () => { message.success('已删除'); queryClient.invalidateQueries({ queryKey: ['files'] }); },
+    onError: () => message.error('删除失败'),
   });
 
   const handleDownload = async (id: string) => {
@@ -47,13 +58,14 @@ export default function FilePage() {
     }
   };
 
-  const columns = [
+  const columns: ColumnsType<FileAsset> = [
     {
       title: '文件名', dataIndex: 'originalName', key: 'name',
       render: (name: string) => <span><FileOutlined style={{ marginRight: 8 }} />{name}</span>,
     },
     {
       title: '大小', dataIndex: 'fileSize', key: 'size', width: 120,
+      sorter: (a, b) => a.fileSize - b.fileSize,
       render: (size: number) => formatSize(size),
     },
     {
@@ -62,6 +74,8 @@ export default function FilePage() {
     },
     {
       title: '上传时间', dataIndex: 'createdAt', key: 'createdAt', width: 180,
+      sorter: (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+      defaultSortOrder: 'descend',
       render: (t: string) => t ? new Date(t).toLocaleString('zh-CN') : '-',
     },
     {
@@ -113,11 +127,11 @@ export default function FilePage() {
       <div style={{ marginBottom: 16 }}>
         <Input
           prefix={<SearchOutlined />}
-          placeholder="搜索文件"
+          placeholder="搜索文件（输入自动搜索）"
           style={{ width: 280 }}
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
-          onPressEnter={() => { setKeyword(searchText); setPage(1); }}
+          allowClear
         />
       </div>
 

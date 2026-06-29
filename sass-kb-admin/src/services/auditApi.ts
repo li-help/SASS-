@@ -15,6 +15,6 @@ export interface AuditLog {
 }
 
 export const auditApi = {
-  list: (params?: { page?: number; size?: number; action?: string; userId?: string }) =>
+  list: (params?: { page?: number; size?: number; action?: string; userId?: string; startDate?: string; endDate?: string }) =>
     api.get<any, ApiResponse<PageResult<AuditLog>>>('/audit/list', { params }),
 };

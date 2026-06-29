@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Table, Button, Input, Modal, Form, Tag, Space, message, Popconfirm, Checkbox, Transfer, Select } from 'antd';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { roleApi } from '@/services/roleApi';
 import { userApi } from '@/services/authService';
 import type { Role } from '@/services/roleApi';
+import type { User } from '@/types/user';
 
 const PERMISSION_OPTIONS = [
   { label: '空间-读取', value: 'space:read' },
@@ -22,6 +23,7 @@ const PERMISSION_OPTIONS = [
 export default function RolePage() {
   const [page, setPage] = useState(1);
   const [keyword, setKeyword] = useState('');
+  const [searchText, setSearchText] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
   const [editing, setEditing] = useState<Role | null>(null);
@@ -29,6 +31,15 @@ export default function RolePage() {
   const [selectedUserKeys, setSelectedUserKeys] = useState<string[]>([]);
   const [form] = Form.useForm();
   const queryClient = useQueryClient();
+
+  // 防抖搜索
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setKeyword(searchText);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchText]);
 
   const { data, isLoading } = useQuery({
     queryKey: ['roles', page, keyword],
@@ -49,16 +60,19 @@ export default function RolePage() {
   const createMut = useMutation({
     mutationFn: (values: Partial<Role>) => roleApi.create(values),
     onSuccess: () => { message.success('创建成功'); setModalOpen(false); queryClient.invalidateQueries({ queryKey: ['roles'] }); },
+    onError: () => message.error('创建失败'),
   });
 
   const updateMut = useMutation({
     mutationFn: ({ id, ...values }: Partial<Role> & { id: string }) => roleApi.update(id, values),
     onSuccess: () => { message.success('更新成功'); setModalOpen(false); queryClient.invalidateQueries({ queryKey: ['roles'] }); },
+    onError: () => message.error('更新失败'),
   });
 
   const deleteMut = useMutation({
     mutationFn: (id: string) => roleApi.delete(id),
     onSuccess: () => { message.success('删除成功'); queryClient.invalidateQueries({ queryKey: ['roles'] }); },
+    onError: () => message.error('删除失败'),
   });
 
   const assignMut = useMutation({
@@ -69,12 +83,13 @@ export default function RolePage() {
       queryClient.invalidateQueries({ queryKey: ['role-members'] });
       queryClient.invalidateQueries({ queryKey: ['permission'] });
     },
+    onError: () => message.error('分配失败'),
   });
 
   const openCreate = () => { setEditing(null); form.resetFields(); setModalOpen(true); };
   const openEdit = (record: Role) => {
     setEditing(record);
-    form.setFieldsValue({ name: record.name, description: record.description, permissions: record.permissions || [] });
+    form.setFieldsValue({ name: record.name, description: record.description, permissions: record.permissions || [], parentId: record.parentId });
     setModalOpen(true);
   };
   const openAssign = (record: Role) => {
@@ -108,7 +123,7 @@ export default function RolePage() {
   };
 
   // Compute Transfer data
-  const allUserData = (allUsers?.data?.records || []).map((u: any) => ({
+  const allUserData = (allUsers?.data?.records || []).map((u: User) => ({
     key: u.id,
     title: `${u.realName || u.username} (${u.username})`,
   }));
@@ -150,8 +165,14 @@ export default function RolePage() {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-        <Input prefix={<SearchOutlined />} placeholder="搜索角色" style={{ width: 240 }}
-          onPressEnter={(e: any) => setKeyword(e.target.value)} />
+        <Input
+          prefix={<SearchOutlined />}
+          placeholder="搜索角色（输入自动搜索）"
+          style={{ width: 260 }}
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          allowClear
+        />
         <Space>
           {(data?.data?.records || []).length === 0 && !isLoading && (
             <Button onClick={() => initDefaultsMut.mutate()} loading={initDefaultsMut.isPending}>
@@ -161,15 +182,21 @@ export default function RolePage() {
           <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>新建角色</Button>
         </Space>
       </div>
-      <Table columns={columns} dataSource={data?.data?.records || []} rowKey="id" loading={isLoading}
-        pagination={{ current: page, total: data?.data?.total || 0, onChange: setPage }} />
+      <Table
+        columns={columns}
+        dataSource={data?.data?.records || []}
+        rowKey="id"
+        loading={isLoading}
+        pagination={{ current: page, total: data?.data?.total || 0, onChange: setPage, showTotal: (t) => `共 ${t} 个角色` }}
+        locale={{ emptyText: '暂无角色，请新建或初始化默认角色' }}
+      />
 
       {/* Create/Edit Modal */}
       <Modal title={editing ? '编辑角色' : '新建角色'} open={modalOpen} onCancel={() => setModalOpen(false)}
         onOk={() => form.submit()} confirmLoading={createMut.isPending || updateMut.isPending} width={640}>
         <Form form={form} layout="vertical" onFinish={handleFinish}
           initialValues={{ permissions: [] }}>
-          <Form.Item name="name" label="名称" rules={[{ required: true }]}>
+          <Form.Item name="name" label="名称" rules={[{ required: true, message: '请输入角色名称' }]}>
             <Input />
           </Form.Item>
           <Form.Item name="description" label="描述">
