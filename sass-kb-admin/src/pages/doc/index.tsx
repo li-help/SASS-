@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Typography, Button, Layout, Spin, message, Tabs, Space as AntSpace, Tag } from 'antd';
+import { Typography, Button, Layout, Spin, message, Tabs, Space as AntSpace, Tag, Breadcrumb, List } from 'antd';
 import { SaveOutlined, ArrowLeftOutlined, ClockCircleOutlined, FileTextOutlined, CommentOutlined, SendOutlined, StopOutlined, EditOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import SpaceTree from '@/components/tree/SpaceTree';
@@ -23,6 +23,8 @@ export default function DocPage() {
   const { setCurrentVersion, currentVersion, setIsSaving, lastSavedAt } = useDocStore();
   const [activeTab, setActiveTab] = useState('outline');
   const [pendingSave, setPendingSave] = useState<{ json: object; html: string } | null>(null);
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
+  const [selectedFolderName, setSelectedFolderName] = useState<string>('');
   const { data: canWrite } = usePermission('doc', docId!, 'write');
 
   // 获取目录树
@@ -38,6 +40,18 @@ export default function DocPage() {
     queryFn: () => docApi.getById(docId!),
     enabled: !!docId,
   });
+
+  // 获取文件夹下的文档列表
+  const { data: folderDocsData, isLoading: folderDocsLoading } = useQuery({
+    queryKey: ['folder-docs', spaceId, selectedFolderId],
+    queryFn: () => docApi.list({ spaceId: spaceId!, folderId: selectedFolderId!, size: 50 }),
+    enabled: !!selectedFolderId && !!spaceId,
+  });
+
+  const handleFolderSelect = (folderId: string, folderName: string) => {
+    setSelectedFolderId(folderId);
+    setSelectedFolderName(folderName);
+  };
 
   // 保存 mutation
   const saveMut = useMutation({
@@ -131,7 +145,7 @@ export default function DocPage() {
         {treeLoading ? (
           <Spin size="small" style={{ display: 'block', margin: '20px auto' }} />
         ) : (
-          <SpaceTree treeData={treeNodes} spaceId={spaceId!} onRefresh={refetchTree} />
+          <SpaceTree treeData={treeNodes} spaceId={spaceId!} onRefresh={refetchTree} onFolderSelect={handleFolderSelect} />
         )}
       </Sider>
 
@@ -188,12 +202,67 @@ export default function DocPage() {
             />
           </>
         ) : spaceId ? (
-          // 没有选中文档时的空状态
-          <div style={{ textAlign: 'center', paddingTop: 80 }}>
-            <FileTextOutlined style={{ fontSize: 64, color: '#d9d9d9' }} />
-            <Title level={4} type="secondary" style={{ marginTop: 16 }}>选择左侧目录中的文档开始编辑</Title>
-            <Text type="secondary">或右键文件夹创建新文档</Text>
-          </div>
+          selectedFolderId ? (
+            // 文件夹文档列表
+            <div>
+              <Breadcrumb
+                style={{ marginBottom: 16 }}
+                items={[
+                  { title: <a onClick={() => { setSelectedFolderId(null); setSelectedFolderName(''); }}>知识空间</a> },
+                  { title: selectedFolderName || '文件夹' },
+                ]}
+              />
+              {folderDocsLoading ? (
+                <Spin size="large" style={{ display: 'block', margin: '60px auto' }} />
+              ) : (
+                <List
+                  size="small"
+                  dataSource={folderDocsData?.data?.records || []}
+                  locale={{ emptyText: '此文件夹下暂无文档' }}
+                  renderItem={(doc) => (
+                    <List.Item
+                      style={{
+                        cursor: 'pointer',
+                        padding: '12px 16px',
+                        borderRadius: 8,
+                        transition: 'background 0.2s',
+                      }}
+                      onClick={() => navigate(`/space/${spaceId}/doc/${doc.id}`)}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = '#F7F8FA')}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                    >
+                      <List.Item.Meta
+                        avatar={<FileTextOutlined style={{ fontSize: 20, color: '#1E3A5F' }} />}
+                        title={
+                          <span>
+                            {doc.title || '无标题'}
+                            <Tag
+                              color={doc.status === 'published' ? 'green' : doc.status === 'draft' ? 'gold' : 'default'}
+                              style={{ marginLeft: 8, fontSize: 11, borderRadius: 4 }}
+                            >
+                              {doc.status === 'published' ? '已发布' : doc.status === 'draft' ? '草稿' : '已归档'}
+                            </Tag>
+                          </span>
+                        }
+                        description={
+                          doc.updatedAt
+                            ? `更新于 ${new Date(doc.updatedAt).toLocaleString('zh-CN')}`
+                            : '-'
+                        }
+                      />
+                    </List.Item>
+                  )}
+                />
+              )}
+            </div>
+          ) : (
+            // 未选择文件夹时的空状态
+            <div style={{ textAlign: 'center', paddingTop: 80 }}>
+              <FileTextOutlined style={{ fontSize: 64, color: '#d9d9d9' }} />
+              <Title level={4} type="secondary" style={{ marginTop: 16 }}>选择左侧目录中的文档开始编辑</Title>
+              <Text type="secondary">或右键文件夹创建新文档</Text>
+            </div>
+          )
         ) : (
           <div style={{ textAlign: 'center', paddingTop: 80 }}>
             <FileTextOutlined style={{ fontSize: 64, color: '#d9d9d9' }} />

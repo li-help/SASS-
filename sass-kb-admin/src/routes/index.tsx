@@ -12,7 +12,6 @@ const UserPage = lazy(() => import('@/pages/user'));
 const SpacePage = lazy(() => import('@/pages/space'));
 const DocPage = lazy(() => import('@/pages/doc'));
 const FilePage = lazy(() => import('@/pages/file'));
-const SearchPage = lazy(() => import('@/pages/search'));
 const RolePage = lazy(() => import('@/pages/role'));
 const AuditPage = lazy(() => import('@/pages/audit'));
 const PermissionPage = lazy(() => import('@/pages/permission'));
@@ -42,7 +41,6 @@ export const router = createBrowserRouter([
       { path: 'space/:spaceId/doc/:docId', element: <DocPage /> },
       { path: 'doc/:docId', element: <DocPage /> },
       { path: 'file', element: <FilePage /> },
-      { path: 'search', element: <SearchPage /> },
       { path: 'role', element: <RolePage /> },
       { path: 'audit', element: <AuditPage /> },
       { path: 'permission', element: <PermissionPage /> },

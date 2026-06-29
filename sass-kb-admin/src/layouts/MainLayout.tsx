@@ -1,7 +1,7 @@
 import { Layout, Menu, Avatar, Dropdown, Badge, List, Typography, Button, Spin, theme } from 'antd';
 import {
   DashboardOutlined, TeamOutlined, UserOutlined, FolderOpenOutlined,
-  FileOutlined, SearchOutlined, SafetyOutlined, AuditOutlined,
+  FileOutlined, SafetyOutlined, AuditOutlined,
   LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined, BellOutlined,
   KeyOutlined,
 } from '@ant-design/icons';
@@ -18,7 +18,6 @@ const menuItems = [
   { key: '/dashboard', icon: <DashboardOutlined />, label: '工作台' },
   { key: '/space', icon: <FolderOpenOutlined />, label: '知识空间' },
   { key: '/file', icon: <FileOutlined />, label: '文件管理' },
-  { key: '/search', icon: <SearchOutlined />, label: '搜索' },
   { key: '/user', icon: <UserOutlined />, label: '用户管理' },
   { key: '/role', icon: <SafetyOutlined />, label: '角色权限' },
   { key: '/tenant', icon: <TeamOutlined />, label: '租户管理' },

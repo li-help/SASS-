@@ -13,9 +13,10 @@ interface Props {
   treeData: SpaceTreeNode[];
   spaceId: string;
   onRefresh: () => void;
+  onFolderSelect?: (folderId: string, folderName: string) => void;
 }
 
-export default function SpaceTree({ treeData, spaceId, onRefresh }: Props) {
+export default function SpaceTree({ treeData, spaceId, onRefresh, onFolderSelect }: Props) {
   const navigate = useNavigate();
   const [newItemModal, setNewItemModal] = useState<{ type: 'folder' | 'doc'; parentId?: string } | null>(null);
   const [nameInput, setNameInput] = useState('');
@@ -113,6 +114,7 @@ export default function SpaceTree({ treeData, spaceId, onRefresh }: Props) {
         title: node.name,
         icon: node.type === 'folder' ? <FolderOutlined /> : <FileTextOutlined />,
         isLeaf: node.type === 'doc',
+        nodeType: node.type,
         children: node.children ? convert(node.children) : undefined,
       }));
     return convert(treeData);
@@ -122,6 +124,9 @@ export default function SpaceTree({ treeData, spaceId, onRefresh }: Props) {
     const node = info.node;
     if (node.isLeaf) {
       navigate(`/doc/${node.key}`);
+    } else if (node.nodeType === 'folder') {
+      // 点击文件夹节点，展示该文件夹下的文档列表
+      onFolderSelect?.(node.key, node.title);
     }
   };
 
