@@ -12,7 +12,7 @@ CREATE TABLE merchant_application (
     contact_email   VARCHAR(100),
     -- 申请人信息（初始管理员）
     username        VARCHAR(100)  NOT NULL,
-    password_hash   VARCHAR(200)  NOT NULL,
+    password_hash   VARCHAR(255)  NOT NULL,
     real_name       VARCHAR(100)  NOT NULL,
     email           VARCHAR(100),
     phone           VARCHAR(20),
@@ -22,8 +22,8 @@ CREATE TABLE merchant_application (
     reviewed_by     VARCHAR(32),
     reviewed_at     TIMESTAMP,
     -- 通过后关联
-    tenant_id       VARCHAR(32),
-    user_id         VARCHAR(32),
+    tenant_id       VARCHAR(32)   REFERENCES tenant(id),
+    user_id         VARCHAR(32)   REFERENCES "user"(id),
     -- 时间戳
     created_at      TIMESTAMP     NOT NULL DEFAULT now(),
     updated_at      TIMESTAMP     NOT NULL DEFAULT now()
@@ -31,6 +31,8 @@ CREATE TABLE merchant_application (
 
 CREATE UNIQUE INDEX idx_ma_credit_code ON merchant_application(credit_code);
 CREATE INDEX idx_ma_status ON merchant_application(status);
+CREATE INDEX idx_ma_tenant_id ON merchant_application(tenant_id);
+CREATE INDEX idx_ma_user_id ON merchant_application(user_id);
 
 -- tenant 表添加来源字段
 ALTER TABLE tenant ADD COLUMN IF NOT EXISTS source VARCHAR(20) DEFAULT 'manual';
