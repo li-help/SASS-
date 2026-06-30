@@ -3,7 +3,7 @@ import {
   DashboardOutlined, TeamOutlined, UserOutlined, FolderOpenOutlined,
   FileOutlined, SafetyOutlined, AuditOutlined,
   LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined, BellOutlined,
-  KeyOutlined,
+  KeyOutlined, ShopOutlined,
 } from '@ant-design/icons';
 import { Suspense, useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
@@ -23,6 +23,7 @@ const menuItems = [
   { key: '/tenant', icon: <TeamOutlined />, label: '租户管理' },
   { key: '/audit', icon: <AuditOutlined />, label: '审计日志' },
   { key: '/permission', icon: <KeyOutlined />, label: '权限管理' },
+  { key: '/onboarding-review', icon: <ShopOutlined />, label: '入驻审核' },
 ];
 
 export default function MainLayout() {
