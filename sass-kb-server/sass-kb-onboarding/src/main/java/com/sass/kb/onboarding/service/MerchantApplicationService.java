@@ -133,6 +133,7 @@ public class MerchantApplicationService {
         tenant.setContactName(app.getRealName());
         tenant.setContactPhone(app.getContactPhone());
         tenant.setStatus("active");
+        tenant.setSource("onboarding");
         tenantMapper.insert(tenant);
 
         // 2. 创建超级管理员用户
