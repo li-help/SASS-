@@ -49,7 +49,7 @@ public class MybatisPlusConfig {
             if (tableName == null) return false;
             // 归一化：去除 JSQLParser 可能保留的 SQL 标识符引号（PostgreSQL "、MySQL `）
             String normalized = tableName.replace("\"", "").replace("`", "");
-            return Set.of("tenant", "user").contains(normalized);
+            return Set.of("tenant", "user", "merchant_application").contains(normalized);
         }
     }
 }
