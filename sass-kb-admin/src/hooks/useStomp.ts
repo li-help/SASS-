@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Client, IMessage } from '@stomp/stompjs';
+import { Client, ReconnectionTimeMode, type IMessage } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -13,7 +13,6 @@ export function useStomp(): StompState {
   const clientRef = useRef<Client | null>(null);
   const [connected, setConnected] = useState(false);
   const subscriptionsRef = useRef<Map<string, (message: IMessage) => void>>(new Map());
-  const reconnectAttemptRef = useRef(0);
 
   const getToken = useCallback(() => {
     return useAuthStore.getState().accessToken;
@@ -35,15 +34,11 @@ export function useStomp(): StompState {
           console.debug('[STOMP]', str);
         }
       },
-      reconnectDelay: (retryCount) => {
-        // 指数退避: 1s, 2s, 4s, 8s, 16s, 30s (max)
-        const delay = Math.min(1000 * Math.pow(2, retryCount), 30000);
-        reconnectAttemptRef.current = retryCount;
-        return delay;
-      },
+      reconnectDelay: 1000,
+      maxReconnectDelay: 30000,
+      reconnectTimeMode: ReconnectionTimeMode.EXPONENTIAL,
       onConnect: () => {
         setConnected(true);
-        reconnectAttemptRef.current = 0;
 
         // 重新订阅之前的订阅
         subscriptionsRef.current.forEach((callback, destination) => {
