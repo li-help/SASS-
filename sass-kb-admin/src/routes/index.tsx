@@ -15,6 +15,9 @@ const FilePage = lazy(() => import('@/pages/file'));
 const RolePage = lazy(() => import('@/pages/role'));
 const AuditPage = lazy(() => import('@/pages/audit'));
 const PermissionPage = lazy(() => import('@/pages/permission'));
+const OnboardingPage = lazy(() => import('@/pages/onboarding'));
+const OnboardingReviewPage = lazy(() => import('@/pages/onboarding-review'));
+const OnboardingStatusPage = lazy(() => import('@/pages/onboarding-status'));
 
 export const router = createBrowserRouter([
   {
@@ -22,6 +25,8 @@ export const router = createBrowserRouter([
     children: [
       { path: 'login', element: <LoginPage /> },
       { path: 'register', element: <RegisterPage /> },
+      { path: 'onboarding', element: <OnboardingPage /> },
+      { path: 'onboarding-status', element: <OnboardingStatusPage /> },
     ],
   },
   {
@@ -44,6 +49,7 @@ export const router = createBrowserRouter([
       { path: 'role', element: <RolePage /> },
       { path: 'audit', element: <AuditPage /> },
       { path: 'permission', element: <PermissionPage /> },
+      { path: 'onboarding-review', element: <OnboardingReviewPage /> },
     ],
   },
 ]);
