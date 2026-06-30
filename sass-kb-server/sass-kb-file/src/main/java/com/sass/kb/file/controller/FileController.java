@@ -1,9 +1,12 @@
 package com.sass.kb.file.controller;
 
+import com.sass.kb.common.event.EntityEvent;
+import com.sass.kb.common.event.EventPublisher;
 import com.sass.kb.common.result.PageResult;
 import com.sass.kb.common.result.R;
 import com.sass.kb.file.entity.FileAsset;
 import com.sass.kb.file.service.FileService;
+import com.sass.kb.tenant.context.TenantContext;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -17,6 +20,7 @@ import java.util.Set;
 public class FileController {
 
     private final FileService fileService;
+    private final EventPublisher eventPublisher;
 
     private static final Set<String> ALLOWED_MIME_TYPES = Set.of(
             "image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml",
@@ -48,7 +52,9 @@ public class FileController {
             return R.fail(400, "文件大小超过限制 (最大 50MB)");
         }
         String userId = (String) request.getAttribute("userId");
-        return R.ok(fileService.upload(file, spaceId, userId));
+        FileAsset asset = fileService.upload(file, spaceId, userId);
+        eventPublisher.publish(EntityEvent.of("CREATED", "FILE", asset.getId(), TenantContext.getCurrentTenantId()));
+        return R.ok(asset);
     }
 
     @GetMapping("/{id}")
@@ -81,6 +87,7 @@ public class FileController {
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable String id) {
         fileService.delete(id);
+        eventPublisher.publish(EntityEvent.of("DELETED", "FILE", id, TenantContext.getCurrentTenantId()));
         return R.ok();
     }
 

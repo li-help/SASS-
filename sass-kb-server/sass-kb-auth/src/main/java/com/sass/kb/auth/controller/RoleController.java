@@ -10,6 +10,8 @@ import com.sass.kb.auth.mapper.PermissionRuleMapper;
 import com.sass.kb.auth.mapper.RoleMapper;
 import com.sass.kb.auth.mapper.UserMapper;
 import com.sass.kb.auth.service.PermissionService;
+import com.sass.kb.common.event.EntityEvent;
+import com.sass.kb.common.event.EventPublisher;
 import com.sass.kb.common.exception.BizException;
 import com.sass.kb.common.result.PageResult;
 import com.sass.kb.common.result.R;
@@ -28,6 +30,7 @@ public class RoleController {
     private final PermissionRuleMapper permissionRuleMapper;
     private final UserMapper userMapper;
     private final PermissionService permissionService;
+    private final EventPublisher eventPublisher;
 
     @GetMapping("/list")
     public R<PageResult<Role>> list(
@@ -53,6 +56,7 @@ public class RoleController {
         role.setId(IdUtil.fastSimpleUUID());
         role.setTenantId(tenantId);
         roleMapper.insert(role);
+        eventPublisher.publish(EntityEvent.of("CREATED", "ROLE", role.getId(), tenantId));
         return R.ok(role);
     }
 
@@ -66,6 +70,7 @@ public class RoleController {
         roleMapper.updateById(role);
         permissionService.broadcastInvalidation(
                 existing.getTenantId(), "role", id);
+        eventPublisher.publish(EntityEvent.of("UPDATED", "ROLE", id, existing.getTenantId()));
         return R.ok();
     }
 
@@ -87,6 +92,7 @@ public class RoleController {
         roleMapper.deleteById(id);
         permissionService.broadcastInvalidation(
                 existing.getTenantId(), "role", id);
+        eventPublisher.publish(EntityEvent.of("DELETED", "ROLE", id, existing.getTenantId()));
         return R.ok();
     }
 
@@ -120,6 +126,7 @@ public class RoleController {
             }
         }
         permissionService.broadcastInvalidation(tenantId, "role", id);
+        eventPublisher.publish(EntityEvent.of("UPDATED", "ROLE", id, tenantId));
         return R.ok();
     }
 
@@ -141,6 +148,7 @@ public class RoleController {
                 .eq(PermissionRule::getTargetId, id)
                 .eq(PermissionRule::getAction, "member"));
         permissionService.broadcastInvalidation(tenantId, "role", id);
+        eventPublisher.publish(EntityEvent.of("UPDATED", "ROLE", id, tenantId));
         return R.ok();
     }
 

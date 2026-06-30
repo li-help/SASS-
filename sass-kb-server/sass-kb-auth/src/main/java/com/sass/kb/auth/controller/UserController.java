@@ -6,6 +6,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sass.kb.auth.entity.User;
 import com.sass.kb.auth.mapper.UserMapper;
+import com.sass.kb.common.event.EntityEvent;
+import com.sass.kb.common.event.EventPublisher;
 import com.sass.kb.common.exception.BizException;
 import com.sass.kb.common.result.PageResult;
 import com.sass.kb.common.result.R;
@@ -25,6 +27,7 @@ import java.util.Set;
 public class UserController {
 
     private final UserMapper userMapper;
+    private final EventPublisher eventPublisher;
 
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final String PASSWORD_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%";
@@ -77,6 +80,7 @@ public class UserController {
         userMapper.insert(user);
         user.setPasswordHash(null);
         // 返回生成的明文密码（仅此一次可见）
+        eventPublisher.publish(EntityEvent.of("CREATED", "USER", user.getId(), tenantId));
         return R.ok(Map.of("user", user, "initialPassword", rawPassword));
     }
 
@@ -96,6 +100,7 @@ public class UserController {
         user.setIsSuperAdmin(null); // 不允许通过此接口修改超管标识
         user.setTenantId(null);     // 不允许切换租户
         userMapper.updateById(user);
+        eventPublisher.publish(EntityEvent.of("UPDATED", "USER", id, tenantId));
         return R.ok();
     }
 
@@ -116,6 +121,7 @@ public class UserController {
         u.setId(id);
         u.setStatus(status);
         userMapper.updateById(u);
+        eventPublisher.publish(EntityEvent.of("STATUS_CHANGED", "USER", id, tenantId));
         return R.ok();
     }
 

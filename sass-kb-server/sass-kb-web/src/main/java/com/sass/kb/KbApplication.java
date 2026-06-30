@@ -6,10 +6,12 @@ import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import org.springframework.scheduling.annotation.EnableAsync;
 
 @SpringBootApplication
 @EnableAspectJAutoProxy
 @EnableCaching
+@EnableAsync
 @ComponentScan(basePackages = "com.sass.kb")
 public class KbApplication {
     public static void main(String[] args) {

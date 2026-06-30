@@ -5,6 +5,8 @@ import com.sass.kb.auth.dto.RefreshRequest;
 import com.sass.kb.auth.dto.RegisterRequest;
 import com.sass.kb.auth.dto.TokenResponse;
 import com.sass.kb.auth.service.AuthService;
+import com.sass.kb.common.event.EntityEvent;
+import com.sass.kb.common.event.EventPublisher;
 import com.sass.kb.common.result.R;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final AuthService authService;
+    private final EventPublisher eventPublisher;
 
     @PostMapping("/login")
     public R<TokenResponse> login(@Valid @RequestBody LoginRequest req) {
@@ -35,6 +38,7 @@ public class AuthController {
     @PostMapping("/register")
     public R<String> register(@Valid @RequestBody RegisterRequest req) {
         String realName = authService.register(req);
+        eventPublisher.publish(EntityEvent.of("CREATED", "USER", null, null));
         return R.ok("注册成功，欢迎 " + realName);
     }
 }

@@ -1,12 +1,15 @@
 package com.sass.kb.doc.controller;
 
 import com.sass.kb.common.annotation.RequirePermission;
+import com.sass.kb.common.event.EntityEvent;
+import com.sass.kb.common.event.EventPublisher;
 import com.sass.kb.common.result.PageResult;
 import com.sass.kb.common.result.R;
 import com.sass.kb.doc.dto.DocSaveRequest;
 import com.sass.kb.doc.entity.Document;
 import com.sass.kb.doc.entity.DocumentVersion;
 import com.sass.kb.doc.service.DocService;
+import com.sass.kb.tenant.context.TenantContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,11 +24,14 @@ import java.util.Map;
 public class DocController {
 
     private final DocService docService;
+    private final EventPublisher eventPublisher;
 
     @PostMapping
     public R<Document> create(@Valid @RequestBody Document doc, HttpServletRequest request) {
         String userId = (String) request.getAttribute("userId");
-        return R.ok(docService.create(doc, userId));
+        Document created = docService.create(doc, userId);
+        eventPublisher.publish(EntityEvent.of("CREATED", "DOC", created.getId(), TenantContext.getCurrentTenantId()));
+        return R.ok(created);
     }
 
     @GetMapping("/{id}")
@@ -41,20 +47,25 @@ public class DocController {
         if (req.getUpdatedBy() == null) {
             req.setUpdatedBy(userId);
         }
-        return R.ok(docService.save(id, req));
+        Document saved = docService.save(id, req);
+        eventPublisher.publish(EntityEvent.of("UPDATED", "DOC", id, TenantContext.getCurrentTenantId()));
+        return R.ok(saved);
     }
 
     @DeleteMapping("/{id}")
     @RequirePermission(resource = "doc", action = "delete")
     public R<Void> delete(@PathVariable String id) {
         docService.delete(id);
+        eventPublisher.publish(EntityEvent.of("DELETED", "DOC", id, TenantContext.getCurrentTenantId()));
         return R.ok();
     }
 
     @PutMapping("/{id}/status")
     @RequirePermission(resource = "doc", action = "write")
     public R<Document> updateStatus(@PathVariable String id, @RequestParam String status) {
-        return R.ok(docService.updateStatus(id, status));
+        Document updated = docService.updateStatus(id, status);
+        eventPublisher.publish(EntityEvent.of("STATUS_CHANGED", "DOC", id, TenantContext.getCurrentTenantId()));
+        return R.ok(updated);
     }
 
     @GetMapping("/{id}/versions")

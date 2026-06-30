@@ -4,6 +4,8 @@ import cn.hutool.core.util.IdUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sass.kb.common.exception.BizException;
+import com.sass.kb.common.event.EntityEvent;
+import com.sass.kb.common.event.EventPublisher;
 import com.sass.kb.common.result.PageResult;
 import com.sass.kb.common.result.R;
 import com.sass.kb.tenant.entity.Tenant;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 public class TenantController {
 
     private final TenantMapper tenantMapper;
+    private final EventPublisher eventPublisher;
 
     private void checkSuperAdmin(HttpServletRequest request) {
         Boolean isSuperAdmin = (Boolean) request.getAttribute("isSuperAdmin");
@@ -49,6 +52,7 @@ public class TenantController {
         tenant.setId(IdUtil.fastSimpleUUID());
         tenant.setStatus("active");
         tenantMapper.insert(tenant);
+        eventPublisher.publish(EntityEvent.of("CREATED", "TENANT", tenant.getId(), tenant.getId()));
         return R.ok(tenant);
     }
 
@@ -57,6 +61,7 @@ public class TenantController {
         checkSuperAdmin(request);
         tenant.setId(id);
         tenantMapper.updateById(tenant);
+        eventPublisher.publish(EntityEvent.of("UPDATED", "TENANT", id, id));
         return R.ok();
     }
 
@@ -67,6 +72,7 @@ public class TenantController {
         t.setId(id);
         t.setStatus(status);
         tenantMapper.updateById(t);
+        eventPublisher.publish(EntityEvent.of("STATUS_CHANGED", "TENANT", id, id));
         return R.ok();
     }
 }

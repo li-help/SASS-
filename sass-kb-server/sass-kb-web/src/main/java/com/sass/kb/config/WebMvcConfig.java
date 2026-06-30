@@ -43,7 +43,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .excludePathPatterns("/api/auth/login", "/api/auth/refresh", "/api/auth/register",
                         "/api/onboarding/apply", "/api/onboarding/status",
                         "/v3/api-docs/**", "/doc.html", "/swagger-ui/**",
-                        "/actuator/**", "/api/test/**", "/api/file/*/download-file")
+                        "/actuator/**", "/api/test/**", "/api/file/*/download-file",
+                        "/ws/**", "/ws")
                 .order(1);
     }
 }

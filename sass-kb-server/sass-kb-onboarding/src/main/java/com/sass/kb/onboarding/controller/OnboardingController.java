@@ -1,5 +1,7 @@
 package com.sass.kb.onboarding.controller;
 
+import com.sass.kb.common.event.EntityEvent;
+import com.sass.kb.common.event.EventPublisher;
 import com.sass.kb.common.exception.BizException;
 import com.sass.kb.common.result.PageResult;
 import com.sass.kb.common.result.R;
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 public class OnboardingController {
 
     private final MerchantApplicationService service;
+    private final EventPublisher eventPublisher;
 
     // ── 公开接口 ──
 
@@ -55,7 +58,11 @@ public class OnboardingController {
     public R<ApplicationVO> approve(@PathVariable String id, HttpServletRequest request) {
         checkSuperAdmin(request);
         String reviewerId = (String) request.getAttribute("userId");
-        return R.ok(service.approve(id, reviewerId));
+        ApplicationVO vo = service.approve(id, reviewerId);
+        // 入驻审核通过后新建了租户和用户
+        eventPublisher.publish(EntityEvent.of("CREATED", "TENANT", vo.getTenantId(), null));
+        eventPublisher.publish(EntityEvent.of("CREATED", "USER", vo.getUserId(), vo.getTenantId()));
+        return R.ok(vo);
     }
 
     @PostMapping("/applications/{id}/reject")

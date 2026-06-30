@@ -10,6 +10,7 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/authStore';
 import { notificationApi, type Notification } from '@/services/notificationApi';
+import { useRealtimeRefresh } from '@/hooks/useRealtimeRefresh';
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
@@ -33,6 +34,9 @@ export default function MainLayout() {
   const { realName, logout } = useAuthStore();
   const queryClient = useQueryClient();
   const { token } = theme.useToken();
+
+  // 实时刷新：WebSocket 推送数据变更后自动失效 React Query 缓存
+  useRealtimeRefresh();
 
   const { data: unreadData } = useQuery({
     queryKey: ['unread-count'],
