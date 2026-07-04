@@ -7,6 +7,8 @@ import com.sass.kb.common.result.R;
 import com.sass.kb.file.entity.FileAsset;
 import com.sass.kb.file.service.FileService;
 import com.sass.kb.tenant.context.TenantContext;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -14,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Set;
 
+@Tag(name = "文件管理", description = "文件上传、下载与管理")
 @RestController
 @RequestMapping("/api/file")
 @RequiredArgsConstructor
@@ -37,6 +40,7 @@ public class FileController {
 
     private static final long MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
+    @Operation(summary = "上传文件")
     @PostMapping("/upload")
     public R<FileAsset> upload(@RequestParam("file") MultipartFile file,
                                 @RequestParam(required = false) String spaceId,
@@ -57,11 +61,13 @@ public class FileController {
         return R.ok(asset);
     }
 
+    @Operation(summary = "获取文件信息")
     @GetMapping("/{id}")
     public R<FileAsset> getById(@PathVariable String id) {
         return R.ok(fileService.getById(id));
     }
 
+    @Operation(summary = "获取文件下载链接")
     @GetMapping("/{id}/download")
     public R<String> download(@PathVariable String id, HttpServletRequest request) {
         // 带上 token 参数，浏览器直接打开也能通过鉴权
@@ -76,6 +82,7 @@ public class FileController {
         return R.ok(url);
     }
 
+    @Operation(summary = "下载文件")
     @GetMapping("/{id}/download-file")
     public void downloadFile(@PathVariable String id,
                              @RequestParam(required = false) String token,
@@ -84,6 +91,7 @@ public class FileController {
         fileService.downloadToStream(id, response);
     }
 
+    @Operation(summary = "删除文件")
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable String id) {
         fileService.delete(id);
@@ -91,6 +99,7 @@ public class FileController {
         return R.ok();
     }
 
+    @Operation(summary = "获取文件列表")
     @GetMapping("/list")
     public R<PageResult<FileAsset>> list(
             @RequestParam(required = false) String spaceId,

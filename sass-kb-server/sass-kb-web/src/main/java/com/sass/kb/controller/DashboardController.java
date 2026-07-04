@@ -11,6 +11,8 @@ import com.sass.kb.doc.mapper.SpaceMapper;
 import com.sass.kb.file.entity.FileAsset;
 import com.sass.kb.file.mapper.FileAssetMapper;
 import com.sass.kb.tenant.context.TenantContext;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Tag(name = "仪表盘", description = "仪表盘统计信息")
 @RestController
 @RequestMapping("/api/dashboard")
 @RequiredArgsConstructor
@@ -32,6 +35,7 @@ public class DashboardController {
     private final FileAssetMapper fileAssetMapper;
     private final UserMapper userMapper;
 
+    @Operation(summary = "仪表盘统计")
     @GetMapping("/stats")
     @Cacheable(value = "dashboard:stats", key = "T(com.sass.kb.tenant.context.TenantContext).getCurrentTenantId() ?: 'global'")
     public R<Map<String, Object>> stats() {

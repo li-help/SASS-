@@ -1,5 +1,11 @@
 import axios from 'axios';
+import { message } from 'antd';
 import { useAuthStore } from '@/stores/authStore';
+
+// 扩展 axios 配置：支持 _retry 标记
+interface RetryableConfig extends axios.InternalAxiosRequestConfig {
+  _retry?: boolean;
+}
 
 const api = axios.create({
   baseURL: '/api',
@@ -46,7 +52,7 @@ let refreshQueue: Array<(token: string) => void> = [];
 api.interceptors.response.use(
   (res) => {
     // 记录 GET 响应用于去重
-    const config = res.config as any;
+    const config = res.config;
     if (config.method === 'get') {
       const key = `${config.url}:${JSON.stringify(config.params || '')}`;
       const entry = inflight.get(key);
@@ -60,12 +66,16 @@ api.interceptors.response.use(
       return error.__promise;
     }
 
-    const original = error.config;
+    const original = error.config as RetryableConfig | undefined;
     if (!original) return Promise.reject(error);
 
     if (error.response?.status === 401 && !original._retry) {
       const { refreshToken, setTokens, logout } = useAuthStore.getState();
-      if (!refreshToken) { logout(); return Promise.reject(error); }
+      if (!refreshToken) {
+        message.error('登录已过期，请重新登录');
+        logout();
+        return Promise.reject(error);
+      }
 
       if (isRefreshing) {
         return new Promise((resolve) => {
@@ -79,7 +89,7 @@ api.interceptors.response.use(
       original._retry = true;
       isRefreshing = true;
       try {
-        const res = await api.post('/auth/refresh', { refreshToken });
+        const res = await api.post<unknown, { data: { accessToken: string; refreshToken: string } }>('/auth/refresh', { refreshToken });
         const data = res.data;
         setTokens(data.accessToken, data.refreshToken);
         refreshQueue.forEach((cb) => cb(data.accessToken));
@@ -87,6 +97,7 @@ api.interceptors.response.use(
         original.headers.Authorization = `Bearer ${data.accessToken}`;
         return api(original);
       } catch {
+        message.error('登录已过期，请重新登录');
         logout();
         return Promise.reject(error);
       } finally {

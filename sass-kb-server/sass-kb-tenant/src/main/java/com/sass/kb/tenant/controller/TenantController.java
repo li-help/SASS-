@@ -10,11 +10,14 @@ import com.sass.kb.common.result.PageResult;
 import com.sass.kb.common.result.R;
 import com.sass.kb.tenant.entity.Tenant;
 import com.sass.kb.tenant.mapper.TenantMapper;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+@Tag(name = "租户管理", description = "租户 CRUD（超级管理员）")
 @RestController
 @RequestMapping("/api/tenant")
 @RequiredArgsConstructor
@@ -30,6 +33,7 @@ public class TenantController {
         }
     }
 
+    @Operation(summary = "租户列表")
     @GetMapping("/list")
     public R<PageResult<Tenant>> list(
             @RequestParam(defaultValue = "1") int page,
@@ -46,6 +50,7 @@ public class TenantController {
         return R.ok(new PageResult<>(p.getRecords(), p.getTotal(), page, size));
     }
 
+    @Operation(summary = "创建租户")
     @PostMapping
     public R<Tenant> create(@Valid @RequestBody Tenant tenant, HttpServletRequest request) {
         checkSuperAdmin(request);
@@ -56,6 +61,7 @@ public class TenantController {
         return R.ok(tenant);
     }
 
+    @Operation(summary = "更新租户")
     @PutMapping("/{id}")
     public R<Void> update(@PathVariable String id, @RequestBody Tenant tenant, HttpServletRequest request) {
         checkSuperAdmin(request);
@@ -65,6 +71,7 @@ public class TenantController {
         return R.ok();
     }
 
+    @Operation(summary = "切换租户状态")
     @PutMapping("/{id}/status")
     public R<Void> toggleStatus(@PathVariable String id, @RequestParam String status, HttpServletRequest request) {
         checkSuperAdmin(request);

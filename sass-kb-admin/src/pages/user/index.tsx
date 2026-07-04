@@ -33,8 +33,25 @@ export default function UserPage() {
     mutationFn: (values: Partial<User>) => userApi.create(values),
     onSuccess: (res) => {
       const pwd = res.data?.initialPassword;
-      message.success(`创建成功，初始密码: ${pwd}（请妥善保存，仅显示一次）`, 6);
+      if (pwd) {
+        // 使用更安全的方式显示密码，避免直接拼接
+        Modal.success({
+          title: '创建成功',
+          content: (
+            <div>
+              <p>用户创建成功！</p>
+              <p><strong>初始密码：</strong>{pwd}</p>
+              <p style={{ color: '#ff4d4f', fontSize: '12px', marginTop: '8px' }}>⚠️ 请妥善保存，此密码仅显示一次且不会被再次显示</p>
+            </div>
+          ),
+          okText: '我知道了',
+          width: 400,
+        });
+      } else {
+        message.success('创建成功');
+      }
       setModalOpen(false);
+      form.resetFields();
       queryClient.invalidateQueries({ queryKey: ['users'] });
     },
     onError: () => message.error('创建失败'),
@@ -153,7 +170,7 @@ export default function UserPage() {
           </Form.Item>
           <Form.Item name="phone" label="手机号" rules={[{ pattern: /^[\d\-+() ]{7,20}$/, message: '请输入有效的手机号' }]}>
             <Input placeholder="请输入手机号" />
-          </Form.Item>
+          </Form.Item> 
         </Form>
       </Modal>
     </div>

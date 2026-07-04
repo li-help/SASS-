@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { auditApi, type AuditLog } from '@/services/auditApi';
 import dayjs from 'dayjs';
+import { downloadCSV } from '@/utils/csv';
 
 const { RangePicker } = DatePicker;
 const { Text, Title } = Typography;
@@ -31,25 +32,19 @@ const ACTION_COLORS: Record<string, string> = {
   DELETE_FILE: 'red',
 };
 
+const CSV_HEADERS = ['时间', '用户', '操作', '目标类型', '目标ID', 'IP地址', '详情'];
+
 function exportCSV(data: AuditLog[]) {
-  const headers = ['时间', '用户', '操作', '目标类型', '目标ID', 'IP地址', '详情'];
-  const rows = data.map(r => [
+  const rows = data.map((r) => [
     r.createdAt?.substring(0, 19) || '',
     r.username || '',
     r.action || '',
     r.targetType || '',
     r.targetId || '',
     r.ipAddress || '',
-    (r.detail || '').replace(/"/g, '""'),
+    r.detail || '',
   ]);
-  const csv = [headers.join(','), ...rows.map(r => r.map(c => `"${c}"`).join(','))].join('\n');
-  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `审计日志_${dayjs().format('YYYY-MM-DD_HHmmss')}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
+  downloadCSV(CSV_HEADERS, rows, `审计日志_${dayjs().format('YYYY-MM-DD_HHmmss')}.csv`);
   message.success('导出成功');
 }
 
@@ -91,9 +86,15 @@ export default function AuditPage() {
   const columns: ColumnsType<AuditLog> = [
     {
       title: '时间', dataIndex: 'createdAt', key: 'createdAt', width: 160,
-      sorter: (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+      sorter: (a, b) => {
+        if (!a.createdAt || !b.createdAt) return 0;
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      },
       defaultSortOrder: 'descend',
-      render: (t: string) => t?.substring(0, 19) || '-',
+      render: (t: string) => {
+        if (!t) return '-';
+        return t.substring(0, 19);
+      },
     },
     {
       title: '用户', dataIndex: 'username', key: 'username', width: 120,
@@ -116,7 +117,7 @@ export default function AuditPage() {
       render: (id: string, record: AuditLog) => (
         id ? (
           <a onClick={() => handleTargetClick(record.targetType, id)} style={{ cursor: 'pointer', fontSize: 12 }}>
-            {id.substring(0, 12)}...
+            {id.length > 15 ? id.substring(0, 12) + '...' : id}
           </a>
         ) : '-'
       ),
@@ -155,12 +156,12 @@ export default function AuditPage() {
       </div>
 
       <Space style={{ marginBottom: 16 }} wrap>
-        <RangePicker
-          value={dateRange as any}
-          onChange={(dates) => { setDateRange(dates as any); setPage(1); }}
-          placeholder={['开始日期', '结束日期']}
-          allowClear
-        />
+      <RangePicker
+        value={dateRange}
+        onChange={(dates: [dayjs.Dayjs | null, dayjs.Dayjs | null] | null) => { setDateRange(dates); setPage(1); }}
+        placeholder={['开始日期', '结束日期']}
+        allowClear
+      />
         <Select
           style={{ width: 150 }}
           value={actionFilter}
@@ -173,7 +174,11 @@ export default function AuditPage() {
           placeholder="搜索用户名"
           style={{ width: 180 }}
           value={userIdFilter}
-          onChange={(e) => { setUserIdFilter(e.target.value); setPage(1); }}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+            const target = e.target as HTMLInputElement;
+            setUserIdFilter(target.value);
+            setPage(1);
+          }}
           allowClear
         />
       </Space>

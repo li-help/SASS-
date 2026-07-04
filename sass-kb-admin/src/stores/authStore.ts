@@ -2,6 +2,13 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import api from '@/services/api';
 
+interface LoginResponse {
+  accessToken: string;
+  refreshToken: string;
+  userId: string;
+  realName: string;
+}
+
 interface AuthState {
   accessToken: string | null;
   refreshToken: string | null;
@@ -21,7 +28,7 @@ export const useAuthStore = create<AuthState>()(
       userId: null,
       realName: null,
       login: async (account, password) => {
-        const json: any = await api.post('/auth/login', { account, password });
+        const json = await api.post<unknown, { code: number; message: string; data: LoginResponse }>('/auth/login', { account, password });
         if (json.code !== 200) throw new Error(json.message);
         const d = json.data;
         set({

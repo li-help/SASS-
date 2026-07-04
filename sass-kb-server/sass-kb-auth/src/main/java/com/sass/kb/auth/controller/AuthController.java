@@ -8,6 +8,8 @@ import com.sass.kb.auth.service.AuthService;
 import com.sass.kb.common.event.EntityEvent;
 import com.sass.kb.common.event.EventPublisher;
 import com.sass.kb.common.result.R;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -15,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Tag(name = "认证", description = "登录、注册、Token 刷新")
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -23,18 +26,21 @@ public class AuthController {
     private final AuthService authService;
     private final EventPublisher eventPublisher;
 
+    @Operation(summary = "用户登录")
     @PostMapping("/login")
     public R<TokenResponse> login(@Valid @RequestBody LoginRequest req) {
         TokenResponse result = authService.login(req);
         return R.ok(result);
     }
 
+    @Operation(summary = "刷新 Token")
     @PostMapping("/refresh")
     public R<TokenResponse> refresh(@Valid @RequestBody RefreshRequest req) {
         TokenResponse result = authService.refresh(req);
         return R.ok(result);
     }
 
+    @Operation(summary = "用户注册")
     @PostMapping("/register")
     public R<String> register(@Valid @RequestBody RegisterRequest req) {
         String realName = authService.register(req);

@@ -8,6 +8,8 @@ import com.sass.kb.auth.service.PermissionService;
 import com.sass.kb.common.annotation.AuditLog;
 import com.sass.kb.common.result.R;
 import com.sass.kb.tenant.context.TenantContext;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
+@Tag(name = "权限管理", description = "权限规则管理")
 @RestController
 @RequestMapping("/api/permission")
 @RequiredArgsConstructor
@@ -23,6 +26,7 @@ public class PermissionController {
     private final PermissionRuleMapper permissionRuleMapper;
     private final PermissionService permissionService;
 
+    @Operation(summary = "获取权限规则列表")
     @GetMapping("/rules")
     public R<List<PermissionRule>> listRules(
             @RequestParam(required = false) String targetType,
@@ -45,6 +49,7 @@ public class PermissionController {
         return R.ok(permissionRuleMapper.selectList(qw));
     }
 
+    @Operation(summary = "创建权限规则")
     @PostMapping("/rules")
     @AuditLog(action = "CREATE_PERMISSION", targetType = "permission")
     public R<PermissionRule> createRule(@RequestBody PermissionRule rule) {
@@ -57,6 +62,7 @@ public class PermissionController {
         return R.ok(rule);
     }
 
+    @Operation(summary = "更新权限规则")
     @PutMapping("/rules/{id}")
     @AuditLog(action = "UPDATE_PERMISSION", targetType = "permission")
     public R<Void> updateRule(@PathVariable String id, @RequestBody PermissionRule rule) {
@@ -70,6 +76,7 @@ public class PermissionController {
         return R.ok();
     }
 
+    @Operation(summary = "删除权限规则")
     @DeleteMapping("/rules/{id}")
     @AuditLog(action = "DELETE_PERMISSION", targetType = "permission")
     public R<Void> deleteRule(@PathVariable String id) {
@@ -82,6 +89,7 @@ public class PermissionController {
         return R.ok();
     }
 
+    @Operation(summary = "批量创建权限规则")
     @PostMapping("/rules/batch")
     public R<List<PermissionRule>> createRules(@RequestBody List<PermissionRule> rules) {
         String tenantId = TenantContext.getCurrentTenantId();
@@ -97,6 +105,7 @@ public class PermissionController {
         return R.ok(created);
     }
 
+    @Operation(summary = "批量删除权限规则")
     @DeleteMapping("/rules/batch")
     public R<Void> deleteRules(@RequestBody List<String> ids) {
         for (String id : ids) {
@@ -110,6 +119,7 @@ public class PermissionController {
         return R.ok();
     }
 
+    @Operation(summary = "检查权限")
     @GetMapping("/check")
     public R<Map<String, Boolean>> check(
             @RequestParam String resourceType,
