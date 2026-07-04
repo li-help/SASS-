@@ -1,9 +1,9 @@
-import axios from 'axios';
+import axios, { type InternalAxiosRequestConfig } from 'axios';
 import { message } from 'antd';
 import { useAuthStore } from '@/stores/authStore';
 
 // 扩展 axios 配置：支持 _retry 标记
-interface RetryableConfig extends axios.InternalAxiosRequestConfig {
+interface RetryableConfig extends InternalAxiosRequestConfig {
   _retry?: boolean;
 }
 
