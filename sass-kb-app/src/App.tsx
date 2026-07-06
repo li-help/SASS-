@@ -5,6 +5,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useAuthStore } from '@/stores/authStore';
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { View, ActivityIndicator } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { notificationApi } from '@/services/notificationApi';
 import LoginScreen from '@/screens/LoginScreen';
 import RegisterScreen from '@/screens/RegisterScreen';
@@ -49,8 +50,27 @@ function MainTabs() {
   });
   const unreadCount = typeof unreadData === 'number' ? unreadData : 0;
 
+  const tabIcons: Record<string, { focused: keyof typeof Ionicons.glyphMap; unfocused: keyof typeof Ionicons.glyphMap }> = {
+    Home: { focused: 'home', unfocused: 'home-outline' },
+    Spaces: { focused: 'library', unfocused: 'library-outline' },
+    Search: { focused: 'search', unfocused: 'search-outline' },
+    Files: { focused: 'folder', unfocused: 'folder-outline' },
+    Notifications: { focused: 'notifications', unfocused: 'notifications-outline' },
+    Profile: { focused: 'person', unfocused: 'person-outline' },
+  };
+
   return (
-    <Tab.Navigator>
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        tabBarActiveTintColor: '#1677ff',
+        tabBarInactiveTintColor: '#999',
+        tabBarIcon: ({ focused, color, size }) => {
+          const icons = tabIcons[route.name];
+          const iconName = icons ? (focused ? icons.focused : icons.unfocused) : 'ellipse';
+          return <Ionicons name={iconName} size={size} color={color} />;
+        },
+      })}
+    >
       <Tab.Screen name="Home" component={HomeScreen} options={{ title: '工作台' }} />
       <Tab.Screen name="Spaces" component={SpaceNavigator} options={{ headerShown: false, title: '知识库' }} />
       <Tab.Screen name="Search" component={SearchScreen} options={{ title: '搜索' }} />

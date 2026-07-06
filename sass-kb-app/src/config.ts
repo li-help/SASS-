@@ -8,7 +8,11 @@ const getBaseUrl = (): string => {
       ? 'http://10.0.2.2:8080/api'
       : 'http://localhost:8080/api';
   }
-  // 生产环境地址（发布前替换为实际地址）
+  // Web 生产环境：使用相对路径，由 nginx 代理到后端
+  if (Platform.OS === 'web') {
+    return '/api';
+  }
+  // 原生 App 生产环境地址（发布前替换为实际地址）
   return 'https://your-production-api.com/api';
 };
 
