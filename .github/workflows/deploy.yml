@@ -123,12 +123,22 @@ jobs:
           echo "  User ${{ secrets.SERVER_USER }}" >> ~/.ssh/config
           echo "  IdentityFile ~/.ssh/id_ed25519" >> ~/.ssh/config
           echo "  StrictHostKeyChecking no" >> ~/.ssh/config
+          echo "  ConnectTimeout 60" >> ~/.ssh/config
+          echo "  ServerAliveInterval 15" >> ~/.ssh/config
+          echo "  ServerAliveCountMax 4" >> ~/.ssh/config
+          echo "  TCPKeepAlive yes" >> ~/.ssh/config
 
       - name: 上传产物到服务器
         run: |
-          ssh server "mkdir -p /home/${{ secrets.SERVER_USER }}/deploy/admin /home/${{ secrets.SERVER_USER }}/deploy/server"
-          scp -r deploy/admin/* server:/home/${{ secrets.SERVER_USER }}/deploy/admin/
-          scp deploy/server/*.jar server:/home/${{ secrets.SERVER_USER }}/deploy/server/
+          for i in 1 2 3; do
+            ssh server "mkdir -p /home/${{ secrets.SERVER_USER }}/deploy/admin /home/${{ secrets.SERVER_USER }}/deploy/server" && break || { echo "等待重试 ($i/3)..."; sleep 10; }
+          done
+          for i in 1 2 3; do
+            scp -r deploy/admin/* server:/home/${{ secrets.SERVER_USER }}/deploy/admin/ && break || { echo "等待重试 ($i/3)..."; sleep 10; }
+          done
+          for i in 1 2 3; do
+            scp deploy/server/*.jar server:/home/${{ secrets.SERVER_USER }}/deploy/server/ && break || { echo "等待重试 ($i/3)..."; sleep 10; }
+          done
 
       - name: 停服上传重启
         run: |
