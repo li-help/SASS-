@@ -3,14 +3,12 @@ import type { PageResult, ApiResponse } from '@/types/common';
 import type { User, Tenant } from '@/types/user';
 
 export interface DashboardStats {
-  spaces: number;
-  docs: number;
   files: number;
   users: number;
+  tenants: number;
   recentDocs: Array<{
     id: string;
     title: string;
-    spaceId: string;
     status: string;
     updatedAt: string;
   }>;

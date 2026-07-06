@@ -17,10 +17,9 @@ interface EntityEvent {
 const QUERY_KEY_MAP: Record<string, string[][]> = {
   USER: [['users'], ['dashboard-stats']],
   TENANT: [['tenants'], ['dashboard-stats']],
-  SPACE: [['spaces'], ['dashboard-stats']],
-  DOC: [['doc'], ['space-tree'], ['folder-docs'], ['dashboard-stats']],
   FILE: [['files'], ['dashboard-stats']],
   ROLE: [['roles']],
+  MENU: [['menus']],
 };
 
 const DEBOUNCE_MS = 300;

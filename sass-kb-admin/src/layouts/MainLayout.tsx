@@ -1,31 +1,32 @@
 import { Layout, Menu, Avatar, Dropdown, Badge, List, Typography, Button, Spin, theme } from 'antd';
+import type { MenuProps } from 'antd';
 import {
-  DashboardOutlined, TeamOutlined, UserOutlined, FolderOpenOutlined,
-  FileOutlined, SafetyOutlined, AuditOutlined,
+  DashboardOutlined, UserOutlined,
   LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined, BellOutlined,
-  KeyOutlined, ShopOutlined,
 } from '@ant-design/icons';
-import { Suspense, useState } from 'react';
+import { Suspense, useState, useMemo } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/authStore';
 import { notificationApi, type Notification } from '@/services/notificationApi';
+import { menuApi } from '@/services/menuApi';
+import type { Menu as MenuType } from '@/services/menuApi';
+import { getIcon } from '@/utils/iconMap';
 import { useRealtimeRefresh } from '@/hooks/useRealtimeRefresh';
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
 
-const menuItems = [
-  { key: '/dashboard', icon: <DashboardOutlined />, label: '工作台' },
-  { key: '/space', icon: <FolderOpenOutlined />, label: '知识空间' },
-  { key: '/file', icon: <FileOutlined />, label: '文件管理' },
-  { key: '/user', icon: <UserOutlined />, label: '用户管理' },
-  { key: '/role', icon: <SafetyOutlined />, label: '角色权限' },
-  { key: '/tenant', icon: <TeamOutlined />, label: '租户管理' },
-  { key: '/audit', icon: <AuditOutlined />, label: '审计日志' },
-  { key: '/permission', icon: <KeyOutlined />, label: '权限管理' },
-  { key: '/onboarding-review', icon: <ShopOutlined />, label: '入驻审核' },
-];
+function treeToMenuItems(nodes: MenuType[]): MenuProps['items'] {
+  return nodes
+    .filter((n) => n.visible && n.status === '0')
+    .map((n) => ({
+      key: n.path || n.id,
+      icon: getIcon(n.icon),
+      label: n.name,
+      children: n.children?.length ? treeToMenuItems(n.children) : undefined,
+    }));
+}
 
 export default function MainLayout() {
   const [collapsed, setCollapsed] = useState(false);
@@ -37,6 +38,18 @@ export default function MainLayout() {
 
   // 实时刷新：WebSocket 推送数据变更后自动失效 React Query 缓存
   useRealtimeRefresh();
+
+  // 动态菜单
+  const { data: menuData, isLoading: menuLoading } = useQuery({
+    queryKey: ['menus'],
+    queryFn: () => menuApi.tree(),
+    staleTime: 5 * 60_000,
+  });
+
+  const menuItems = useMemo(
+    () => treeToMenuItems(menuData?.data || []),
+    [menuData],
+  );
 
   const { data: unreadData } = useQuery({
     queryKey: ['unread-count'],
@@ -56,7 +69,7 @@ export default function MainLayout() {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
     });
     if (notif.targetType === 'doc' && notif.targetId) {
-      navigate(`/space/any/doc/${notif.targetId}`);
+      // 文档页面已移除，点击通知不再导航
     }
   };
 
@@ -91,7 +104,7 @@ export default function MainLayout() {
             marginRight: collapsed ? 0 : 10,
             flexShrink: 0,
           }}>
-            <FolderOpenOutlined style={{ fontSize: collapsed ? 16 : 18, color: '#fff' }} />
+            <DashboardOutlined style={{ fontSize: collapsed ? 16 : 18, color: '#fff' }} />
           </div>
           {!collapsed && (
             <span style={{
@@ -105,14 +118,20 @@ export default function MainLayout() {
             </span>
           )}
         </div>
-        <Menu
-          theme="dark"
-          mode="inline"
-          selectedKeys={[selectedKey]}
-          items={menuItems}
-          onClick={({ key }) => navigate(key)}
-          style={{ borderInlineEnd: 'none' }}
-        />
+        {menuLoading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}>
+            <Spin size="small" />
+          </div>
+        ) : (
+          <Menu
+            theme="dark"
+            mode="inline"
+            selectedKeys={[selectedKey]}
+            items={menuItems}
+            onClick={({ key }) => navigate(key)}
+            style={{ borderInlineEnd: 'none' }}
+          />
+        )}
       </Sider>
       <Layout>
         <Header style={{
