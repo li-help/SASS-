@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { Card, Form, Input, Button, message, Typography, Divider } from 'antd';
+import { Card, Form, Input, Button, message, Typography } from 'antd';
 import { UserOutlined, MailOutlined, PhoneOutlined, LockOutlined } from '@ant-design/icons';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { userApi } from '@/services/authService';

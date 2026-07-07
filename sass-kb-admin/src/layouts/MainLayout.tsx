@@ -57,7 +57,7 @@ export default function MainLayout() {
 
   const menuItems = useMemo(
     () => {
-      const all = treeToMenuItems(menuData?.data || []);
+      const all = treeToMenuItems(menuData?.data || []) || [];
       if (isAdmin) return all;
       return all.filter((m: any) => ['/dashboard', '/file'].includes(m?.key as string));
     },
