@@ -92,6 +92,20 @@ public class FileController {
         fileService.downloadToStream(id, response);
     }
 
+    @Operation(summary = "获取文件文本内容")
+    @GetMapping("/{id}/content")
+    public R<String> getContent(@PathVariable String id) {
+        return R.ok(fileService.getContent(id));
+    }
+
+    @Operation(summary = "保存文件文本内容")
+    @PutMapping("/{id}/content")
+    public R<Void> saveContent(@PathVariable String id, @RequestBody String content) {
+        fileService.saveContent(id, content);
+        eventPublisher.publish(EntityEvent.of("UPDATED", "FILE", id, TenantContext.getCurrentTenantId()));
+        return R.ok();
+    }
+
     @Operation(summary = "删除文件")
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable String id) {
