@@ -106,7 +106,7 @@ services:
 
   # ========== 前端 (Nginx) ==========
   frontend:
-    image: ${CI_REGISTRY}/sass-kb-admin:latest
+    image: ${CI_REGISTRY_IMAGE}/sass-kb-admin:latest
     ports:
       - "80:80"
     depends_on:

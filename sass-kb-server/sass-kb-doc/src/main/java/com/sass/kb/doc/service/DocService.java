@@ -74,8 +74,12 @@ public class DocService {
 
         // 更新当前版本
         current.setTitle(req.getTitle());
-        current.setContentJson(req.getContentJson());
-        current.setContentHtml(HtmlSanitizer.sanitize(req.getContentHtml()));
+        if (req.getContentJson() != null) {
+            current.setContentJson(req.getContentJson());
+        }
+        if (req.getContentHtml() != null) {
+            current.setContentHtml(HtmlSanitizer.sanitize(req.getContentHtml()));
+        }
         current.setVersion(current.getVersion() + 1);
         if (req.getUpdatedBy() != null) {
             current.setUpdatedBy(req.getUpdatedBy());

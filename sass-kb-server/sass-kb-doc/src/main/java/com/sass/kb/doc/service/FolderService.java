@@ -9,6 +9,7 @@ import com.sass.kb.doc.mapper.FolderMapper;
 import com.sass.kb.doc.mapper.DocumentMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -37,6 +38,7 @@ public class FolderService {
         return folderMapper.selectById(id);
     }
 
+    @Transactional
     public void delete(String id) {
         Folder existing = folderMapper.selectById(id);
         if (existing == null) {

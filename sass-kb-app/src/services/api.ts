@@ -18,14 +18,9 @@ const DEDUP_WINDOW = 2000;
 api.interceptors.request.use((config) => {
   if (config.method === 'get') {
     const key = `${config.url}:${JSON.stringify(config.params || '')}`;
-    const now = Date.now();
     const cached = inflightRequests.get(key);
     if (cached) {
-      const cachedEntry = cached as any;
-      if (now - cachedEntry._ts < DEDUP_WINDOW) {
-        return Promise.reject({ __dedup: true, __key: key, __promise: cachedEntry });
-      }
-      inflightRequests.delete(key);
+      return Promise.reject({ __dedup: true, __promise: cached });
     }
   }
   return config;
@@ -37,13 +32,11 @@ let refreshQueue: Array<(token: string) => void> = [];
 api.interceptors.response.use(
   (res) => {
     // Store GET response for dedup
-    const config = res.config as any;
+    const config = res.config;
     if (config.method === 'get') {
       const key = `${config.url}:${JSON.stringify(config.params || '')}`;
-      const entry = inflightRequests.get(key) as any;
-      if (entry) {
-        entry._ts = Date.now();
-      }
+      inflightRequests.set(key, Promise.resolve(res.data));
+      setTimeout(() => inflightRequests.delete(key), DEDUP_WINDOW);
     }
     return res.data;
   },
@@ -98,15 +91,5 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
-// 定期清理过期的去重缓存
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, val] of inflightRequests.entries()) {
-    if (now - (val as any)._ts > DEDUP_WINDOW * 2) {
-      inflightRequests.delete(key);
-    }
-  }
-}, 10_000);
 
 export default api;

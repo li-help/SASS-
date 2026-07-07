@@ -22,28 +22,19 @@ api.interceptors.request.use((config) => {
 });
 
 // GET 请求去重：相同请求 2 秒内不重复发送
-const inflight = new Map<string, { promise: Promise<any>; ts: number }>();
+const inflight = new Map<string, Promise<any>>();
 const DEDUP_MS = 2000;
 
 api.interceptors.request.use((config) => {
   if (config.method === 'get') {
     const key = `${config.url}:${JSON.stringify(config.params || '')}`;
     const cached = inflight.get(key);
-    if (cached && Date.now() - cached.ts < DEDUP_MS) {
-      return Promise.reject({ __dedup: true, __promise: cached.promise });
+    if (cached) {
+      return Promise.reject({ __dedup: true, __promise: cached });
     }
-    inflight.delete(key);
   }
   return config;
 });
-
-// 定期清理过期缓存
-setInterval(() => {
-  const now = Date.now();
-  for (const [k, v] of inflight) {
-    if (now - v.ts > DEDUP_MS * 2) inflight.delete(k);
-  }
-}, 10_000);
 
 // 响应拦截：401 自动刷新或跳登录
 let isRefreshing = false;
@@ -55,8 +46,8 @@ api.interceptors.response.use(
     const config = res.config;
     if (config.method === 'get') {
       const key = `${config.url}:${JSON.stringify(config.params || '')}`;
-      const entry = inflight.get(key);
-      if (entry) entry.ts = Date.now();
+      inflight.set(key, Promise.resolve(res.data));
+      setTimeout(() => inflight.delete(key), DEDUP_MS);
     }
     return res.data;
   },

@@ -4,6 +4,7 @@ import com.sass.kb.auth.dto.LoginRequest;
 import com.sass.kb.auth.dto.RefreshRequest;
 import com.sass.kb.auth.dto.RegisterRequest;
 import com.sass.kb.auth.dto.TokenResponse;
+import com.sass.kb.auth.entity.User;
 import com.sass.kb.auth.service.AuthService;
 import com.sass.kb.common.event.EntityEvent;
 import com.sass.kb.common.event.EventPublisher;
@@ -43,8 +44,8 @@ public class AuthController {
     @Operation(summary = "用户注册")
     @PostMapping("/register")
     public R<String> register(@Valid @RequestBody RegisterRequest req) {
-        String realName = authService.register(req);
-        eventPublisher.publish(EntityEvent.of("CREATED", "USER", null, null));
-        return R.ok("注册成功，欢迎 " + realName);
+        User user = authService.register(req);
+        eventPublisher.publish(EntityEvent.of("CREATED", "USER", user.getId(), user.getTenantId()));
+        return R.ok("注册成功，欢迎 " + user.getRealName());
     }
 }

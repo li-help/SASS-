@@ -35,12 +35,20 @@ public class AuthInterceptor implements HandlerInterceptor {
         try {
             String userId = jwtUtil.getUserId(token);
             String tenantId = jwtUtil.getTenantId(token);
+            User user = userMapper.selectById(userId);
+            if (user == null) {
+                writeUnauthorized(response, "用户不存在");
+                return false;
+            }
+            if (!"active".equals(user.getStatus())) {
+                writeForbidden(response, "账号已被禁用");
+                return false;
+            }
             request.setAttribute("userId", userId);
             request.setAttribute("tenantId", tenantId);
             TenantContext.setCurrentTenantId(tenantId);
-            User user = userMapper.selectById(userId);
-            request.setAttribute("username", user != null ? user.getUsername() : "unknown");
-            request.setAttribute("isSuperAdmin", user != null && Boolean.TRUE.equals(user.getIsSuperAdmin()));
+            request.setAttribute("username", user.getUsername());
+            request.setAttribute("isSuperAdmin", Boolean.TRUE.equals(user.getIsSuperAdmin()));
             return true;
         } catch (Exception e) {
             writeUnauthorized(response, "令牌无效或已过期");
@@ -67,6 +75,15 @@ public class AuthInterceptor implements HandlerInterceptor {
         response.setContentType("application/json;charset=UTF-8");
         try {
             response.getWriter().write(objectMapper.writeValueAsString(R.fail(401, message)));
+        } catch (Exception ignored) {
+        }
+    }
+
+    private void writeForbidden(HttpServletResponse response, String message) {
+        response.setStatus(403);
+        response.setContentType("application/json;charset=UTF-8");
+        try {
+            response.getWriter().write(objectMapper.writeValueAsString(R.fail(403, message)));
         } catch (Exception ignored) {
         }
     }

@@ -1,10 +1,12 @@
 package com.sass.kb.file.controller;
 
+import com.sass.kb.auth.util.JwtUtil;
 import com.sass.kb.common.event.EntityEvent;
 import com.sass.kb.common.event.EventPublisher;
 import com.sass.kb.common.result.PageResult;
 import com.sass.kb.common.result.R;
 import com.sass.kb.file.entity.FileAsset;
+import com.sass.kb.file.mapper.FileAssetMapper;
 import com.sass.kb.file.service.FileService;
 import com.sass.kb.tenant.context.TenantContext;
 import io.swagger.v3.oas.annotations.Operation;
@@ -23,7 +25,9 @@ import java.util.Set;
 public class FileController {
 
     private final FileService fileService;
+    private final FileAssetMapper fileAssetMapper;
     private final EventPublisher eventPublisher;
+    private final JwtUtil jwtUtil;
 
     private static final Set<String> ALLOWED_MIME_TYPES = Set.of(
             "image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml",
@@ -79,7 +83,7 @@ public class FileController {
         }
         String url = "/api/file/" + id + "/download-file";
         if (token != null) {
-            url += "?token=" + token;
+            url += "?token=" + java.net.URLEncoder.encode(token, java.nio.charset.StandardCharsets.UTF_8);
         }
         return R.ok(url);
     }
@@ -89,7 +93,34 @@ public class FileController {
     public void downloadFile(@PathVariable String id,
                              @RequestParam(required = false) String token,
                              jakarta.servlet.http.HttpServletResponse response) {
-        // token 已通过 URL 参数传递，浏览器直接打开也能下载
+        if (token == null || token.isBlank()) {
+            response.setStatus(401);
+            response.setContentType("application/json;charset=UTF-8");
+            try {
+                response.getWriter().write("{\"code\":401,\"message\":\"缺少下载令牌\"}");
+            } catch (Exception ignored) {}
+            return;
+        }
+        String tenantId;
+        try {
+            tenantId = jwtUtil.validateToken(token).get("tenantId", String.class);
+        } catch (Exception e) {
+            response.setStatus(401);
+            response.setContentType("application/json;charset=UTF-8");
+            try {
+                response.getWriter().write("{\"code\":401,\"message\":\"下载令牌无效或已过期\"}");
+            } catch (Exception ignored) {}
+            return;
+        }
+        FileAsset asset = fileAssetMapper.selectByIdWithoutTenant(id);
+        if (asset != null && asset.getTenantId() != null && !asset.getTenantId().equals(tenantId)) {
+            response.setStatus(403);
+            response.setContentType("application/json;charset=UTF-8");
+            try {
+                response.getWriter().write("{\"code\":403,\"message\":\"无权访问该文件\"}");
+            } catch (Exception ignored) {}
+            return;
+        }
         fileService.downloadToStream(id, response);
     }
 
