@@ -17,6 +17,7 @@ const TEXT_MIME_TYPES = [
 const TEXT_EXTENSIONS = ['txt', 'csv', 'json', 'md', 'xml', 'yml', 'yaml',
   'html', 'htm', 'css', 'js', 'ts', 'jsx', 'tsx', 'java', 'py', 'sh', 'sql', 'properties', 'ini', 'log'];
 
+function isAudio(mime: string) { return mime.startsWith('audio/'); }
 function isImage(mime: string) { return IMAGE_TYPES.includes(mime); }
 function isVideo(mime: string) { return mime === 'video/mp4'; }
 function isPdf(mime: string) { return mime === 'application/pdf'; }
@@ -135,6 +136,15 @@ export default function FilePreview({ fileId, onBack }: Props) {
           </div>
         )}
 
+        {isAudio(file.mimeType) && (
+          <div style={{ display: 'flex', justifyContent: 'center', background: '#1e1e1e', padding: 40 }}>
+            <audio controls style={{ width: '100%', maxWidth: 600 }}
+              src={`/api/file/${fileId}/download-file`}>
+              您的浏览器不支持音频播放
+            </audio>
+          </div>
+        )}
+
         {isPdf(file.mimeType) && (
           <iframe src={`/api/file/${fileId}/download-file`}
             style={{ width: '100%', height: '75vh', border: 'none' }} />
@@ -160,7 +170,7 @@ export default function FilePreview({ fileId, onBack }: Props) {
           )
         )}
 
-        {!isImage(file.mimeType) && !isVideo(file.mimeType) && !isPdf(file.mimeType) && !isText(file) && (
+        {!isAudio(file.mimeType) && !isImage(file.mimeType) && !isVideo(file.mimeType) && !isPdf(file.mimeType) && !isText(file) && (
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300, flexDirection: 'column', gap: 16 }}>
             <Text type="secondary">此文件类型不支持在线预览</Text>
             <Button type="primary" icon={<DownloadOutlined />} onClick={handleDownload}>

@@ -39,4 +39,7 @@ export const userApi = {
   resetPassword: (id: string) =>
     api.put<any, ApiResponse<{ newPassword: string }>>(`/user/${id}/password`),
   me: () => api.get<any, ApiResponse<User>>('/user/me'),
+  myRoles: () => api.get<any, ApiResponse<string[]>>('/user/me/roles'),
+  updateMe: (data: Record<string, string>) =>
+    api.put<any, ApiResponse<void>>('/user/me/update', data),
 };

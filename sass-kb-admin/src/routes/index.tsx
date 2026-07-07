@@ -13,6 +13,8 @@ const RolePage = lazy(() => import('@/pages/role'));
 const OnboardingReviewPage = lazy(() => import('@/pages/onboarding-review'));
 const MenuPage = lazy(() => import('@/pages/menu'));
 const FilePreviewPage = lazy(() => import('@/pages/file/preview'));
+const ProfilePage = lazy(() => import('@/pages/profile'));
+const AuditPage = lazy(() => import('@/pages/audit'));
 
 export const router = createBrowserRouter([
   {
@@ -38,6 +40,8 @@ export const router = createBrowserRouter([
       { path: 'onboarding-review', element: <OnboardingReviewPage /> },
       { path: 'menu', element: <MenuPage /> },
       { path: 'file/:id/preview', element: <FilePreviewPage /> },
+      { path: 'profile', element: <ProfilePage /> },
+      { path: 'audit', element: <AuditPage /> },
     ],
   },
 ]);

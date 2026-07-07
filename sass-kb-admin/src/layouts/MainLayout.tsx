@@ -9,6 +9,7 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/authStore';
 import { notificationApi, type Notification } from '@/services/notificationApi';
+import { userApi } from '@/services/authService';
 import { menuApi } from '@/services/menuApi';
 import type { Menu as MenuType } from '@/services/menuApi';
 import { getIcon } from '@/utils/iconMap';
@@ -46,9 +47,21 @@ export default function MainLayout() {
     staleTime: 5 * 60_000,
   });
 
+  // 获取当前用户角色，管理员看全部菜单，其他人只看 工作台 + 文件管理
+  const { data: myRoles } = useQuery({
+    queryKey: ['my-roles'],
+    queryFn: () => userApi.myRoles(),
+    staleTime: 5 * 60_000,
+  });
+  const isAdmin = myRoles?.data?.includes('管理员') ?? false;
+
   const menuItems = useMemo(
-    () => treeToMenuItems(menuData?.data || []),
-    [menuData],
+    () => {
+      const all = treeToMenuItems(menuData?.data || []);
+      if (isAdmin) return all;
+      return all.filter((m: any) => ['/dashboard', '/file'].includes(m?.key as string));
+    },
+    [menuData, isAdmin],
   );
 
   const { data: unreadData } = useQuery({
@@ -224,7 +237,11 @@ export default function MainLayout() {
             </Dropdown>
 
             {/* User */}
-            <Dropdown menu={{ items: [{ key: 'logout', icon: <LogoutOutlined />, label: '退出登录', onClick: logout }] }}>
+            <Dropdown menu={{ items: [
+            { key: 'profile', icon: <UserOutlined />, label: '个人中心', onClick: () => navigate('/profile') },
+            { type: 'divider' as const },
+            { key: 'logout', icon: <LogoutOutlined />, label: '退出登录', onClick: logout },
+          ] }}>
               <span style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Avatar size={32} icon={<UserOutlined />} style={{ backgroundColor: token.colorPrimary }} />
                 <span style={{ color: token.colorText, fontWeight: 500 }}>{realName}</span>

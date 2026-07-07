@@ -10,11 +10,11 @@ export interface AuditLog {
   targetType: string;
   targetId: string;
   detail: string;
-  ipAddress: string;
+  ip: string;
   createdAt: string;
 }
 
 export const auditApi = {
-  list: (params?: { page?: number; size?: number; action?: string; userId?: string; startDate?: string; endDate?: string }) =>
+  list: (params: { page?: number; size?: number; targetType?: string; action?: string }) =>
     api.get<any, ApiResponse<PageResult<AuditLog>>>('/audit/list', { params }),
 };

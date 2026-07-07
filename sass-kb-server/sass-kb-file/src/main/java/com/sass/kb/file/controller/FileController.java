@@ -36,7 +36,8 @@ public class FileController {
             "application/vnd.ms-powerpoint",
             "application/vnd.openxmlformats-officedocument.presentationml.presentation",
             "application/zip", "application/x-7z-compressed", "application/x-rar-compressed",
-            "video/mp4"
+            "video/mp4",
+            "audio/mpeg", "audio/mp3", "audio/wav", "audio/ogg", "audio/flac"
     );
 
     private static final long MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB

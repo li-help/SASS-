@@ -6,7 +6,7 @@ import {
 } from 'antd';
 import {
   UploadOutlined, DownloadOutlined, DeleteOutlined,
-  SearchOutlined, FileOutlined, SafetyOutlined, EyeOutlined,
+  SearchOutlined, FileOutlined, SafetyOutlined, EyeOutlined, InboxOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -15,6 +15,7 @@ import type { FileAsset } from '@/services/fileService';
 import PermissionModal from '@/components/permission/PermissionModal';
 
 const { Title } = Typography;
+const { Dragger } = Upload;
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return bytes + ' B';
@@ -109,6 +110,7 @@ export default function FilePage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <Title level={3} style={{ margin: 0 }}>文件管理</Title>
         <Upload
+          multiple
           customRequest={async ({ file, onSuccess, onError }: any) => {
             try {
               const res = await fileApi.upload(file as File);
@@ -120,7 +122,7 @@ export default function FilePage() {
                 onError?.(new Error(res.message));
               }
             } catch (e: any) {
-              message.error('上传失败');
+              message.error(`${(file as File).name} 上传失败`);
               onError?.(e);
             }
           }}
@@ -129,6 +131,33 @@ export default function FilePage() {
           <Button type="primary" icon={<UploadOutlined />}>上传文件</Button>
         </Upload>
       </div>
+
+      <Dragger
+        multiple
+        style={{ marginBottom: 16 }}
+        customRequest={async ({ file, onSuccess, onError }: any) => {
+          try {
+            const res = await fileApi.upload(file as File);
+            if (res.code === 200) {
+              message.success(`${(file as File).name} 上传成功`);
+              queryClient.invalidateQueries({ queryKey: ['files'] });
+              onSuccess?.(res.data);
+            } else {
+              onError?.(new Error(res.message));
+            }
+          } catch (e: any) {
+            message.error(`${(file as File).name} 上传失败`);
+            onError?.(e);
+          }
+        }}
+        showUploadList={false}
+      >
+        <p className="ant-upload-drag-icon">
+          <InboxOutlined />
+        </p>
+        <p className="ant-upload-text">点击或拖拽文件到此区域上传</p>
+        <p className="ant-upload-hint">支持批量上传，单个文件最大 50MB</p>
+      </Dragger>
 
       <div style={{ marginBottom: 16 }}>
         <Input

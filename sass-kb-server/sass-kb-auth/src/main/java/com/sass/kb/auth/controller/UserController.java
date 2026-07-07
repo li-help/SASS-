@@ -5,6 +5,8 @@ import cn.hutool.crypto.digest.BCrypt;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sass.kb.auth.entity.User;
+import com.sass.kb.auth.entity.Role;
+import com.sass.kb.auth.mapper.RoleMapper;
 import com.sass.kb.auth.mapper.UserMapper;
 import com.sass.kb.common.event.EntityEvent;
 import com.sass.kb.common.event.EventPublisher;
@@ -27,6 +29,7 @@ import java.util.Set;
 public class UserController {
 
     private final UserMapper userMapper;
+    private final RoleMapper roleMapper;
     private final EventPublisher eventPublisher;
 
     private static final SecureRandom RANDOM = new SecureRandom();
@@ -149,5 +152,36 @@ public class UserController {
         User user = userMapper.selectById(userId);
         if (user != null) user.setPasswordHash(null);
         return R.ok(user);
+    }
+
+    @GetMapping("/me/roles")
+    public R<List<String>> myRoles(HttpServletRequest request) {
+        String userId = (String) request.getAttribute("userId");
+        List<Role> roles = roleMapper.selectByUserId(userId);
+        List<String> roleNames = roles.stream().map(Role::getName).toList();
+        return R.ok(roleNames);
+    }
+
+    @PutMapping("/me/update")
+    public R<Void> updateMe(@RequestBody Map<String, String> body, HttpServletRequest request) {
+        String userId = (String) request.getAttribute("userId");
+        User user = userMapper.selectById(userId);
+        if (user == null) throw new BizException(404, "用户不存在");
+
+        if (body.containsKey("realName")) user.setRealName(body.get("realName"));
+        if (body.containsKey("email")) user.setEmail(body.get("email"));
+        if (body.containsKey("phone")) user.setPhone(body.get("phone"));
+
+        // 修改密码需验证旧密码
+        if (body.containsKey("newPassword")) {
+            String oldPwd = body.get("oldPassword");
+            if (oldPwd == null || !BCrypt.checkpw(oldPwd, user.getPasswordHash())) {
+                return R.fail(400, "旧密码错误");
+            }
+            user.setPasswordHash(BCrypt.hashpw(body.get("newPassword")));
+        }
+
+        userMapper.updateById(user);
+        return R.ok();
     }
 }
