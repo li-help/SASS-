@@ -4,10 +4,10 @@ import cn.hutool.core.util.IdUtil;
 import cn.hutool.crypto.digest.BCrypt;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.sass.kb.auth.entity.Role;
 import com.sass.kb.auth.entity.User;
-import com.sass.kb.auth.mapper.RoleMapper;
 import com.sass.kb.auth.mapper.UserMapper;
+import com.sass.kb.auth.service.MenuService;
+import com.sass.kb.auth.service.RoleService;
 import com.sass.kb.common.exception.BizException;
 import com.sass.kb.common.result.PageResult;
 import com.sass.kb.notification.entity.Notification;
@@ -35,7 +35,8 @@ public class MerchantApplicationService {
     private final MerchantApplicationMapper applicationMapper;
     private final TenantMapper tenantMapper;
     private final UserMapper userMapper;
-    private final RoleMapper roleMapper;
+    private final RoleService roleService;
+    private final MenuService menuService;
     private final NotificationService notificationService;
 
     // ── 公共 API ──
@@ -149,33 +150,9 @@ public class MerchantApplicationService {
         user.setIsSuperAdmin(true);
         userMapper.insert(user);
 
-        // 3. 初始化默认角色
-        String adminRoleId = IdUtil.fastSimpleUUID();
-        Role adminRole = new Role();
-        adminRole.setId(adminRoleId);
-        adminRole.setTenantId(tenant.getId());
-        adminRole.setName("管理员");
-        adminRole.setDescription("拥有所有权限");
-        adminRole.setPermissions(new String[]{"*:*"});
-        roleMapper.insert(adminRole);
-
-        String editorId = IdUtil.fastSimpleUUID();
-        Role editor = new Role();
-        editor.setId(editorId);
-        editor.setTenantId(tenant.getId());
-        editor.setName("编辑者");
-        editor.setDescription("可查看内容并编辑文档");
-        editor.setPermissions(new String[]{"space:read", "doc:read", "doc:write", "file:read", "file:write"});
-        roleMapper.insert(editor);
-
-        Role viewer = new Role();
-        viewer.setId(IdUtil.fastSimpleUUID());
-        viewer.setTenantId(tenant.getId());
-        viewer.setName("阅读者");
-        viewer.setDescription("仅可查看内容");
-        viewer.setParentId(editorId);
-        viewer.setPermissions(new String[]{"space:read", "doc:read", "file:read"});
-        roleMapper.insert(viewer);
+        // 3. 初始化默认角色和菜单
+        roleService.initDefaultRoles(tenant.getId());
+        menuService.initDefaultMenus(tenant.getId());
 
         // 4. 更新申请状态
         app.setStatus("approved");

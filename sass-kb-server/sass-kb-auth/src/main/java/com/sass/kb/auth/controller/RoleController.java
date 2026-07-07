@@ -10,6 +10,7 @@ import com.sass.kb.auth.mapper.PermissionRuleMapper;
 import com.sass.kb.auth.mapper.RoleMapper;
 import com.sass.kb.auth.mapper.UserMapper;
 import com.sass.kb.auth.service.PermissionService;
+import com.sass.kb.auth.service.RoleService;
 import com.sass.kb.common.event.EntityEvent;
 import com.sass.kb.common.event.EventPublisher;
 import com.sass.kb.common.exception.BizException;
@@ -30,6 +31,7 @@ public class RoleController {
     private final PermissionRuleMapper permissionRuleMapper;
     private final UserMapper userMapper;
     private final PermissionService permissionService;
+    private final RoleService roleService;
     private final EventPublisher eventPublisher;
 
     @GetMapping("/list")
@@ -155,53 +157,10 @@ public class RoleController {
     @PostMapping("/init-defaults")
     public R<List<Role>> initDefaults() {
         String tenantId = TenantContext.getCurrentTenantId();
-        List<Role> created = new java.util.ArrayList<>();
-
-        // 只有租户下无角色时才初始化
-        Long count = roleMapper.selectCount(new LambdaQueryWrapper<Role>()
-                .eq(Role::getTenantId, tenantId));
-        if (count > 0) {
-            return R.ok(created); // 已有角色，跳过
+        List<Role> created = roleService.initDefaultRoles(tenantId);
+        if (!created.isEmpty()) {
+            permissionService.invalidateCache();
         }
-
-        // 管理员 - 拥有所有权限
-        Role admin = new Role();
-        admin.setId(IdUtil.fastSimpleUUID());
-        admin.setTenantId(tenantId);
-        admin.setName("管理员");
-        admin.setDescription("拥有所有权限");
-        admin.setPermissions(new String[]{"*:*"});
-        roleMapper.insert(admin);
-        created.add(admin);
-
-        // 编辑者
-        String editorId = IdUtil.fastSimpleUUID();
-        Role editor = new Role();
-        editor.setId(editorId);
-        editor.setTenantId(tenantId);
-        editor.setName("编辑者");
-        editor.setDescription("可查看内容并编辑文档");
-        editor.setPermissions(new String[]{
-                "space:read", "doc:read", "doc:write",
-                "file:read", "file:write",
-        });
-        roleMapper.insert(editor);
-        created.add(editor);
-
-        // 阅读者 - 继承编辑者的只读权限
-        Role viewer = new Role();
-        viewer.setId(IdUtil.fastSimpleUUID());
-        viewer.setTenantId(tenantId);
-        viewer.setName("阅读者");
-        viewer.setDescription("仅可查看内容");
-        viewer.setParentId(editorId); // 也可直接设置权限
-        viewer.setPermissions(new String[]{
-                "space:read", "doc:read", "file:read",
-        });
-        roleMapper.insert(viewer);
-        created.add(viewer);
-
-        permissionService.invalidateCache();
         return R.ok(created);
     }
 }
