@@ -5,6 +5,7 @@ import AuthLayout from '@/layouts/AuthLayout';
 import AuthGuard from './AuthGuard';
 
 const LoginPage = lazy(() => import('@/pages/login'));
+const RegisterPage = lazy(() => import('@/pages/register'));
 const DashboardPage = lazy(() => import('@/pages/dashboard'));
 const TenantPage = lazy(() => import('@/pages/tenant'));
 const UserPage = lazy(() => import('@/pages/user'));
@@ -21,6 +22,7 @@ export const router = createBrowserRouter([
     element: <AuthLayout />,
     children: [
       { path: 'login', element: <LoginPage /> },
+      { path: 'register', element: <RegisterPage /> },
     ],
   },
   {

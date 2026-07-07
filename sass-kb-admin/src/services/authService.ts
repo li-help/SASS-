@@ -8,6 +8,15 @@ export interface DashboardStats {
   tenants: number;
 }
 
+export const authApi = {
+  register: (data: Record<string, string>) =>
+    api.post<any, ApiResponse<string>>('/auth/register', data),
+  login: (data: { account: string; password: string }) =>
+    api.post<any, ApiResponse<{ accessToken: string; refreshToken: string; userId: string; realName: string }>>('/auth/login', data),
+  refresh: (data: { refreshToken: string }) =>
+    api.post<any, ApiResponse<{ accessToken: string; refreshToken: string }>>('/auth/refresh', data),
+};
+
 export const dashboardApi = {
   stats: () => api.get<any, ApiResponse<DashboardStats>>('/dashboard/stats'),
 };
