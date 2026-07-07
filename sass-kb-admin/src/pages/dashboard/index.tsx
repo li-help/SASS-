@@ -6,9 +6,9 @@ import { dashboardApi } from '@/services/authService';
 const { Title, Text } = Typography;
 
 const statConfig = [
-  { key: 'files', title: '文件资源', icon: <FileOutlined />, color: '#D48806', bg: '#FFFBE6' },
-  { key: 'users', title: '用户数', icon: <UserOutlined />, color: '#722ED1', bg: '#F9F0FF' },
-  { key: 'tenants', title: '租户数', icon: <TeamOutlined />, color: '#1E3A5F', bg: '#E8EFF5' },
+  { key: 'files', title: '文件资源', icon: <FileOutlined />, color: '#E8C97A', bg: 'rgba(200,150,62,0.12)' },
+  { key: 'users', title: '用户数', icon: <UserOutlined />, color: '#B388FF', bg: 'rgba(179,136,255,0.12)' },
+  { key: 'tenants', title: '租户数', icon: <TeamOutlined />, color: '#64B5F6', bg: 'rgba(100,181,246,0.12)' },
 ];
 
 export default function DashboardPage() {
@@ -23,7 +23,7 @@ export default function DashboardPage() {
   return (
     <div>
       <div style={{ marginBottom: 24 }}>
-        <Title level={3} style={{ margin: 0, fontWeight: 700 }}>工作台</Title>
+        <Title level={3} style={{ margin: 0, fontWeight: 700, color: '#E8ECF1' }}>工作台</Title>
         <Text type="secondary" style={{ fontSize: 15 }}>欢迎使用 SASS 知识平台</Text>
       </div>
 
@@ -54,7 +54,7 @@ export default function DashboardPage() {
                   <div style={{ fontSize: 13, color: '#8C8C8C', marginBottom: 2 }}>{cfg.title}</div>
                   <Statistic
                     value={stats?.[cfg.key] ?? '-'}
-                    valueStyle={{ fontSize: 26, fontWeight: 700, color: '#1F1F1F' }}
+                    valueStyle={{ fontSize: 26, fontWeight: 700, color: '#E8ECF1' }}
                   />
                 </div>
               </div>
