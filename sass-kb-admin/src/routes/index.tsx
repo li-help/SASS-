@@ -6,6 +6,8 @@ import AuthGuard from './AuthGuard';
 
 const LoginPage = lazy(() => import('@/pages/login'));
 const RegisterPage = lazy(() => import('@/pages/register'));
+const OnboardingPage = lazy(() => import('@/pages/onboarding'));
+const OnboardingStatusPage = lazy(() => import('@/pages/onboarding-status'));
 const DashboardPage = lazy(() => import('@/pages/dashboard'));
 const TenantPage = lazy(() => import('@/pages/tenant'));
 const UserPage = lazy(() => import('@/pages/user'));
@@ -23,6 +25,8 @@ export const router = createBrowserRouter([
     children: [
       { path: 'login', element: <LoginPage /> },
       { path: 'register', element: <RegisterPage /> },
+      { path: 'onboarding', element: <OnboardingPage /> },
+      { path: 'onboarding-status', element: <OnboardingStatusPage /> },
     ],
   },
   {
