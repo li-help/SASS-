@@ -151,7 +151,7 @@ export default function MainLayout() {
   // 关闭标签
   const handleTabRemove = (key: string) => {
     removeTab(key);
-    const { tabs: updatedTabs, activeKey: nextKey } = useTabStore.getState();
+    const { activeKey: nextKey } = useTabStore.getState();
     // 如果关闭的是当前标签，导航到新激活的标签
     if (key === location.pathname) {
       navigate(nextKey);
