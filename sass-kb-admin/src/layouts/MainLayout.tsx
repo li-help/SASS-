@@ -140,7 +140,7 @@ export default function MainLayout() {
     const label = handle?.breadcrumb ?? pathname.split('/').pop() ?? pathname;
     const closable = pathname !== '/dashboard';
     addTab(pathname, label, closable);
-  }, [location.pathname]);
+  }, [location.pathname, matches, addTab]);
 
   // 点击标签时导航
   const handleTabChange = (key: string) => {
