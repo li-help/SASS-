@@ -7,7 +7,10 @@ import com.sass.kb.auth.dto.LoginRequest;
 import com.sass.kb.auth.dto.RefreshRequest;
 import com.sass.kb.auth.dto.RegisterRequest;
 import com.sass.kb.auth.dto.TokenResponse;
+import com.sass.kb.auth.entity.PermissionRule;
+import com.sass.kb.auth.entity.Role;
 import com.sass.kb.auth.entity.User;
+import com.sass.kb.auth.mapper.PermissionRuleMapper;
 import com.sass.kb.auth.mapper.UserMapper;
 import com.sass.kb.auth.util.JwtUtil;
 import com.sass.kb.common.exception.BizException;
@@ -15,12 +18,14 @@ import com.sass.kb.tenant.entity.Tenant;
 import com.sass.kb.tenant.mapper.TenantMapper;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -28,6 +33,8 @@ public class AuthService {
     private final UserMapper userMapper;
     private final TenantMapper tenantMapper;
     private final JwtUtil jwtUtil;
+    private final RoleService roleService;
+    private final PermissionRuleMapper permissionRuleMapper;
 
     public TokenResponse login(LoginRequest req) {
         LambdaQueryWrapper<User> qw = new LambdaQueryWrapper<User>().eq(User::getUsername, req.getAccount());
@@ -94,6 +101,24 @@ public class AuthService {
             userMapper.insert(user);
         } catch (DuplicateKeyException e) {
             throw new BizException("该用户名已存在");
+        }
+
+        // 3. 自动分配「普通用户」角色
+        try {
+            roleService.initDefaultRoles(tenantId);
+            Role normalRole = roleService.findByName(tenantId, "普通用户");
+            PermissionRule pr = new PermissionRule();
+            pr.setId(IdUtil.fastSimpleUUID());
+            pr.setTenantId(tenantId);
+            pr.setSubjectType("user");
+            pr.setSubjectId(user.getId());
+            pr.setTargetType("role");
+            pr.setTargetId(normalRole.getId());
+            pr.setAction("member");
+            pr.setEffect("allow");
+            permissionRuleMapper.insert(pr);
+        } catch (Exception e) {
+            log.warn("为新注册用户分配默认角色失败: userId={}, tenantId={}", user.getId(), tenantId);
         }
 
         return user.getRealName();
