@@ -12,6 +12,11 @@
     <dependencies>
         <dependency>
             <groupId>com.sass.kb</groupId>
+            <artifactId>sass-kb-auth</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.sass.kb</groupId>
             <artifactId>sass-kb-common</artifactId>
             <version>${project.version}</version>
         </dependency>
