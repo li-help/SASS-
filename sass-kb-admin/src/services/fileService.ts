@@ -30,4 +30,8 @@ export const fileApi = {
     api.delete<any, ApiResponse<void>>(`/file/${id}`),
   list: (params: { spaceId?: string; page?: number; size?: number; keyword?: string }) =>
     api.get<any, ApiResponse<PageResult<FileAsset>>>('/file/list', { params }),
+  getContent: (id: string) =>
+    api.get<any, ApiResponse<string>>(`/file/${id}/content`),
+  saveContent: (id: string, content: string) =>
+    api.put<any, ApiResponse<void>>(`/file/${id}/content`, content),
 };
