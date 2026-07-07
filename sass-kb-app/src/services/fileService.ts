@@ -22,20 +22,18 @@ export const fileApi = {
       type: file.type,
     } as any);
     if (spaceId) fd.append('spaceId', spaceId);
-    return api.post<any, ApiResponse<FileAsset>>('/file/upload', fd, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    return api.post<any, ApiResponse<FileAsset>>('/file/upload', fd);
   },
 
   getById: (id: string) =>
-    api.get<any, ApiResponse<FileAsset>>(`/file/${id}`),
+    api.get<ApiResponse<FileAsset>>(`/file/${id}`),
 
   getDownloadUrl: (id: string) =>
-    api.get<any, ApiResponse<string>>(`/file/${id}/download`),
+    api.get<ApiResponse<string>>(`/file/${id}/download`),
 
   delete: (id: string) =>
-    api.delete<any, ApiResponse<void>>(`/file/${id}`),
+    api.delete<ApiResponse<void>>(`/file/${id}`),
 
   list: (params: { spaceId?: string; page?: number; size?: number; keyword?: string }) =>
-    api.get<any, ApiResponse<PageResult<FileAsset>>>('/file/list', { params }),
+    api.get<ApiResponse<PageResult<FileAsset>>>('/file/list', { params }),
 };

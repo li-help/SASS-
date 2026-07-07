@@ -80,7 +80,7 @@ public class AuthService {
     }
 
     @Transactional
-    public String register(RegisterRequest req) {
+    public User register(RegisterRequest req) {
         // 1. 确定租户
         String tenantName = (req.getCompanyName() != null && !req.getCompanyName().isBlank())
                 ? req.getCompanyName() : "默认租户";
@@ -121,7 +121,7 @@ public class AuthService {
             log.warn("为新注册用户分配默认角色失败: userId={}, tenantId={}", user.getId(), tenantId);
         }
 
-        return user.getRealName();
+        return user;
     }
 
     private String resolveTenantId(String tenantName) {

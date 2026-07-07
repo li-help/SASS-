@@ -26,7 +26,8 @@ public class AuditLogController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String action,
-            @RequestParam(required = false) String userId) {
+            @RequestParam(required = false) String userId,
+            @RequestParam(required = false) String targetType) {
         String tenantId = TenantContext.getCurrentTenantId();
         LambdaQueryWrapper<AuditLog> qw = new LambdaQueryWrapper<>();
         if (tenantId != null && !tenantId.isBlank()) {
@@ -37,6 +38,9 @@ public class AuditLogController {
         }
         if (userId != null && !userId.isBlank()) {
             qw.eq(AuditLog::getUserId, userId);
+        }
+        if (targetType != null && !targetType.isBlank()) {
+            qw.eq(AuditLog::getTargetType, targetType);
         }
         qw.orderByDesc(AuditLog::getCreatedAt);
         Page<AuditLog> p = auditLogMapper.selectPage(new Page<>(page, size), qw);

@@ -7,6 +7,7 @@ import com.sass.kb.auth.mapper.MenuMapper;
 import com.sass.kb.tenant.context.TenantContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -167,6 +168,7 @@ public class MenuService {
         return created;
     }
 
+    @Transactional
     public void deleteRecursive(String id) {
         List<Menu> children = menuMapper.selectList(new LambdaQueryWrapper<Menu>()
                 .eq(Menu::getParentId, id));

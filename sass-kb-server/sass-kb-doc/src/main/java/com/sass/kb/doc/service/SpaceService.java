@@ -14,6 +14,7 @@ import com.sass.kb.file.service.FileService;
 import com.sass.kb.tenant.context.TenantContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -64,6 +65,7 @@ public class SpaceService {
         return spaceMapper.selectById(id);
     }
 
+    @Transactional
     public void delete(String id) {
         Space existing = spaceMapper.selectById(id);
         if (existing == null) {

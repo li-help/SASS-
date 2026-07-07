@@ -14,12 +14,9 @@ export function useStomp(): StompState {
   const [connected, setConnected] = useState(false);
   const subscriptionsRef = useRef<Map<string, (message: IMessage) => void>>(new Map());
 
-  const getToken = useCallback(() => {
-    return useAuthStore.getState().accessToken;
-  }, []);
+  const token = useAuthStore((s) => s.accessToken);
 
   useEffect(() => {
-    const token = getToken();
     if (!token) {
       // 未登录，不连接
       return;
@@ -53,11 +50,6 @@ export function useStomp(): StompState {
       },
       onWebSocketClose: () => {
         setConnected(false);
-        // 检查 token 是否已更新（token 刷新后自动重连）
-        const currentToken = getToken();
-        if (currentToken && currentToken !== token) {
-          // token 已刷新，client 会在 reconnectDelay 后自动重连
-        }
       },
     });
 
@@ -65,11 +57,10 @@ export function useStomp(): StompState {
     clientRef.current = client;
 
     return () => {
-      subscriptionsRef.current.clear();
       client.deactivate();
       clientRef.current = null;
     };
-  }, [getToken]);
+  }, [token]);
 
   const subscribe = useCallback(
     (destination: string, callback: (message: IMessage) => void): (() => void) => {
@@ -87,9 +78,6 @@ export function useStomp(): StompState {
       // 返回 unsubscribe 函数
       return () => {
         subscriptionsRef.current.delete(destination);
-        if (client && client.connected) {
-          client.unsubscribe(destination);
-        }
       };
     },
     [],

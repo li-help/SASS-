@@ -1,5 +1,7 @@
 package com.sass.kb.config;
 
+import com.sass.kb.auth.entity.User;
+import com.sass.kb.auth.mapper.UserMapper;
 import com.sass.kb.auth.util.JwtUtil;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
@@ -12,7 +14,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.server.HandshakeInterceptor;
 
-import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -21,6 +22,7 @@ import java.util.Map;
 public class WebSocketHandshakeInterceptor implements HandshakeInterceptor {
 
     private final JwtUtil jwtUtil;
+    private final UserMapper userMapper;
 
     @Override
     public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response,
@@ -41,9 +43,15 @@ public class WebSocketHandshakeInterceptor implements HandshakeInterceptor {
                     log.warn("WebSocket handshake rejected: invalid token type");
                     return false;
                 }
-                attributes.put("userId", claims.getSubject());
+                String userId = claims.getSubject();
+                User user = userMapper.selectById(userId);
+                if (user == null || !"active".equals(user.getStatus())) {
+                    log.warn("WebSocket handshake rejected: user not found or disabled");
+                    return false;
+                }
+                attributes.put("userId", userId);
                 attributes.put("tenantId", claims.get("tenantId", String.class));
-                log.debug("WebSocket handshake OK: userId={}", claims.getSubject());
+                log.debug("WebSocket handshake OK: userId={}", userId);
                 return true;
             } catch (Exception e) {
                 log.warn("WebSocket handshake rejected: {}", e.getMessage());

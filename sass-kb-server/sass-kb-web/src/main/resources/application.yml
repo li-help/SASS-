@@ -70,7 +70,7 @@ minio:
   bucket: sass-kb-files
 
 jwt:
-  secret: your-256-bit-secret-key-change-in-production
+  secret: ${JWT_SECRET:change-me-in-production-use-random-32-char-string}
   access-token-expire: 30   # 分钟
   refresh-token-expire: 10080  # 分钟 (7天)
 

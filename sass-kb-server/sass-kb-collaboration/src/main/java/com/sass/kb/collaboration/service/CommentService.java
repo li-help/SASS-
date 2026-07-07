@@ -12,6 +12,7 @@ import com.sass.kb.common.exception.BizException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -120,11 +121,14 @@ public class CommentService {
         if (!existing.getCreatedBy().equals(userId)) {
             throw new BizException(403, "只能编辑自己的评论");
         }
-        existing.setContent(content);
+        if (content != null) {
+            existing.setContent(content);
+        }
         commentMapper.updateById(existing);
         return toNode(commentMapper.selectById(id));
     }
 
+    @Transactional
     public void delete(String id, String userId) {
         Comment existing = commentMapper.selectById(id);
         if (existing == null) {

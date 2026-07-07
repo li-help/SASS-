@@ -113,12 +113,10 @@ export default function LoginPage() {
                 登 录
               </Button>
             </Form.Item>
-            <div style={{ textAlign: 'center' }}>
-              <Text type="secondary">还没有账号？</Text>
-              <Link to="/register" style={{ fontWeight: 500 }}>立即注册</Link>
-              <Text type="secondary" style={{ margin: '0 8px' }}>|</Text>
-              <Link to="/onboarding" style={{ fontWeight: 500 }}>商家入驻</Link>
-            </div>
+        <div style={{ textAlign: 'center' }}>
+          <Text type="secondary">还没有账号？</Text>
+          <Link to="/register" style={{ fontWeight: 500 }}>立即注册</Link>
+        </div>
           </Form>
         </div>
       </div>

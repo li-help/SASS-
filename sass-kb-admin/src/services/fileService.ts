@@ -18,9 +18,7 @@ export const fileApi = {
     const fd = new FormData();
     fd.append('file', file);
     if (spaceId) fd.append('spaceId', spaceId);
-    return api.post<any, ApiResponse<FileAsset>>('/file/upload', fd, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    return api.post<any, ApiResponse<FileAsset>>('/file/upload', fd);
   },
   getById: (id: string) =>
     api.get<any, ApiResponse<FileAsset>>(`/file/${id}`),
