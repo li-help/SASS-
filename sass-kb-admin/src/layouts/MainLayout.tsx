@@ -166,29 +166,33 @@ export default function MainLayout() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          borderBottom: '1px solid rgba(255,255,255,0.08)',
+          borderBottom: '1px solid rgba(200,150,62,0.15)',
           marginBottom: 4,
         }}>
           <div style={{
             width: collapsed ? 32 : 36,
             height: collapsed ? 32 : 36,
-            borderRadius: 8,
-            background: token.colorPrimary,
+            borderRadius: 10,
+            background: 'linear-gradient(135deg, #C8963E, #A67C2E)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             marginRight: collapsed ? 0 : 10,
             flexShrink: 0,
+            boxShadow: '0 2px 8px rgba(200,150,62,0.30)',
           }}>
             <DashboardOutlined style={{ fontSize: collapsed ? 16 : 18, color: '#fff' }} />
           </div>
           {!collapsed && (
             <span style={{
-              color: '#fff',
+              color: '#E8ECF1',
               fontSize: 16,
               fontWeight: 700,
-              letterSpacing: 0.5,
+              letterSpacing: 1,
               whiteSpace: 'nowrap',
+              background: 'linear-gradient(135deg, #E8C97A, #C8963E)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
             }}>
               SASS 知识平台
             </span>
@@ -211,14 +215,17 @@ export default function MainLayout() {
       </Sider>
       <Layout>
         <Header style={{
-          background: token.colorBgContainer,
+          background: 'rgba(22,35,49,0.85)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
           padding: '0 24px',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+          boxShadow: '0 1px 0 rgba(200,150,62,0.08), 0 2px 8px rgba(0,0,0,0.20)',
           zIndex: 1,
           position: 'relative',
+          borderBottom: '1px solid rgba(200,150,62,0.10)',
         }}>
           <span
             onClick={() => setCollapsed(!collapsed)}
@@ -232,10 +239,16 @@ export default function MainLayout() {
               alignItems: 'center',
               justifyContent: 'center',
               borderRadius: 6,
-              transition: 'background 0.2s',
+              transition: 'background 0.2s, color 0.2s',
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = token.colorBgLayout)}
-            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(200,150,62,0.10)';
+              e.currentTarget.style.color = '#C8963E';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.color = token.colorTextSecondary;
+            }}
           >
             {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
           </span>
@@ -304,7 +317,15 @@ export default function MainLayout() {
               { key: 'logout', icon: <LogoutOutlined />, label: '退出登录', onClick: logout },
             ] }}>
               <span style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Avatar size={32} icon={<UserOutlined />} style={{ backgroundColor: token.colorPrimary }} />
+                <Avatar
+                  size={32}
+                  icon={<UserOutlined />}
+                  style={{
+                    backgroundColor: 'transparent',
+                    border: '1.5px solid #C8963E',
+                    color: '#C8963E',
+                  }}
+                />
                 <span style={{ color: token.colorText, fontWeight: 500 }}>{realName}</span>
               </span>
             </Dropdown>
@@ -352,7 +373,7 @@ export default function MainLayout() {
           background: token.colorBgContainer,
           borderRadius: 10,
           minHeight: 280,
-          boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
         }}>
           <Suspense fallback={<Spin size="large" style={{ display: 'block', margin: '60px auto' }} />}>
             <Outlet />
