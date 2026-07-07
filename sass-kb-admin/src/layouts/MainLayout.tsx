@@ -1,13 +1,14 @@
-import { Layout, Menu, Avatar, Dropdown, Badge, List, Typography, Button, Spin, theme } from 'antd';
+import { Layout, Menu, Avatar, Dropdown, Badge, List, Typography, Button, Spin, theme, Breadcrumb, Tabs } from 'antd';
 import type { MenuProps } from 'antd';
 import {
-  DashboardOutlined, UserOutlined,
+  DashboardOutlined, UserOutlined, HomeOutlined,
   LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined, BellOutlined,
 } from '@ant-design/icons';
-import { Suspense, useState, useMemo } from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { Suspense, useState, useMemo, useEffect } from 'react';
+import { Outlet, useNavigate, useLocation, useMatches, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/authStore';
+import { useTabStore } from '@/stores/tabStore';
 import { notificationApi, type Notification } from '@/services/notificationApi';
 import { userApi } from '@/services/authService';
 import { menuApi } from '@/services/menuApi';
@@ -33,11 +34,13 @@ export default function MainLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const matches = useMatches();
   const { realName, logout } = useAuthStore();
   const queryClient = useQueryClient();
   const { token } = theme.useToken();
+  const { tabs, activeKey, addTab, removeTab, setActiveKey } = useTabStore();
 
-  // 实时刷新：WebSocket 推送数据变更后自动失效 React Query 缓存
+  // 实时刷新
   useRealtimeRefresh();
 
   // 动态菜单
@@ -47,7 +50,6 @@ export default function MainLayout() {
     staleTime: 5 * 60_000,
   });
 
-  // 获取当前用户角色，管理员看全部菜单，其他人只看 工作台 + 文件管理
   const { data: myRoles } = useQuery({
     queryKey: ['my-roles'],
     queryFn: () => userApi.myRoles(),
@@ -82,7 +84,7 @@ export default function MainLayout() {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
     });
     if (notif.targetType === 'doc' && notif.targetId) {
-      // 文档页面已移除，点击通知不再导航
+      // 文档页面已移除
     }
   };
 
@@ -94,6 +96,67 @@ export default function MainLayout() {
   };
 
   const selectedKey = '/' + location.pathname.split('/')[1];
+
+  // ---- 面包屑 ----
+  const breadcrumbItems = useMemo(() => {
+    const items: { title: React.ReactNode; key: string }[] = [
+      {
+        title: (
+          <Link to="/dashboard">
+            <HomeOutlined />
+          </Link>
+        ),
+        key: 'home',
+      },
+    ];
+
+    for (const match of matches) {
+      const handle = (match as any).handle as { breadcrumb?: string } | undefined;
+      const pathname = match.pathname;
+      if (!pathname || pathname === '/') continue;
+
+      const label = handle?.breadcrumb ?? pathname.split('/').pop() ?? pathname;
+      const isLast = pathname === location.pathname;
+
+      items.push({
+        title: isLast ? label : <Link to={pathname}>{label}</Link>,
+        key: pathname,
+      });
+    }
+
+    return items;
+  }, [matches, location.pathname]);
+
+  // ---- 标签栏同步 ----
+  // 路由变化时自动添加标签
+  useEffect(() => {
+    const currentMatch = matches[matches.length - 1];
+    if (!currentMatch) return;
+
+    const handle = (currentMatch as any).handle as { breadcrumb?: string } | undefined;
+    const pathname = currentMatch.pathname;
+    if (!pathname || pathname === '/') return;
+
+    const label = handle?.breadcrumb ?? pathname.split('/').pop() ?? pathname;
+    const closable = pathname !== '/dashboard';
+    addTab(pathname, label, closable);
+  }, [location.pathname]);
+
+  // 点击标签时导航
+  const handleTabChange = (key: string) => {
+    setActiveKey(key);
+    navigate(key);
+  };
+
+  // 关闭标签
+  const handleTabRemove = (key: string) => {
+    removeTab(key);
+    const { tabs: updatedTabs, activeKey: nextKey } = useTabStore.getState();
+    // 如果关闭的是当前标签，导航到新激活的标签
+    if (key === location.pathname) {
+      navigate(nextKey);
+    }
+  };
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
@@ -177,7 +240,6 @@ export default function MainLayout() {
             {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-            {/* Notification Bell */}
             <Dropdown
               trigger={['click']}
               dropdownRender={() => (
@@ -236,12 +298,11 @@ export default function MainLayout() {
               </Badge>
             </Dropdown>
 
-            {/* User */}
             <Dropdown menu={{ items: [
-            { key: 'profile', icon: <UserOutlined />, label: '个人中心', onClick: () => navigate('/profile') },
-            { type: 'divider' as const },
-            { key: 'logout', icon: <LogoutOutlined />, label: '退出登录', onClick: logout },
-          ] }}>
+              { key: 'profile', icon: <UserOutlined />, label: '个人中心', onClick: () => navigate('/profile') },
+              { type: 'divider' as const },
+              { key: 'logout', icon: <LogoutOutlined />, label: '退出登录', onClick: logout },
+            ] }}>
               <span style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Avatar size={32} icon={<UserOutlined />} style={{ backgroundColor: token.colorPrimary }} />
                 <span style={{ color: token.colorText, fontWeight: 500 }}>{realName}</span>
@@ -249,6 +310,42 @@ export default function MainLayout() {
             </Dropdown>
           </div>
         </Header>
+
+        {/* 面包屑 */}
+        <div style={{
+          background: token.colorBgContainer,
+          padding: '12px 24px',
+          borderBottom: `1px solid ${token.colorBorderSecondary}`,
+        }}>
+          <Breadcrumb items={breadcrumbItems} />
+        </div>
+
+        {/* 标签栏 */}
+        <div style={{
+          background: token.colorBgContainer,
+          padding: '0 16px',
+          borderBottom: `1px solid ${token.colorBorderSecondary}`,
+        }}>
+          <Tabs
+            type="editable-card"
+            hideAdd
+            activeKey={activeKey}
+            onChange={handleTabChange}
+            onEdit={(key, action) => {
+              if (action === 'remove' && typeof key === 'string') {
+                handleTabRemove(key);
+              }
+            }}
+            items={tabs.map((t) => ({
+              key: t.key,
+              label: t.label,
+              closable: t.closable,
+            }))}
+            style={{ marginBottom: 0 }}
+            size="small"
+          />
+        </div>
+
         <Content style={{
           margin: 24,
           padding: 24,
