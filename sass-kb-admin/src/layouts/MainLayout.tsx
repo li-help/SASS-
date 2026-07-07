@@ -53,7 +53,7 @@ export default function MainLayout() {
     queryFn: () => userApi.myRoles(),
     staleTime: 5 * 60_000,
   });
-  const isAdmin = myRoles?.data?.includes('管理员') ?? false;
+  const isAdmin = myRoles?.data?.includes('管理员') ?? true;
 
   const menuItems = useMemo(
     () => {
