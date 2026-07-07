@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Typography, Button, Table, Upload, message, Input,
   Space, Tag, Popconfirm,
 } from 'antd';
 import {
   UploadOutlined, DownloadOutlined, DeleteOutlined,
-  SearchOutlined, FileOutlined, SafetyOutlined,
+  SearchOutlined, FileOutlined, SafetyOutlined, EyeOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -25,6 +26,7 @@ export default function FilePage() {
   const [page, setPage] = useState(1);
   const [keyword, setKeyword] = useState('');
   const [searchText, setSearchText] = useState('');
+  const navigate = useNavigate();
   const [permTarget, setPermTarget] = useState<{ type: 'file'; id: string; name: string } | null>(null);
   const queryClient = useQueryClient();
 
@@ -79,9 +81,13 @@ export default function FilePage() {
       render: (t: string) => t ? new Date(t).toLocaleString('zh-CN') : '-',
     },
     {
-      title: '操作', key: 'action', width: 180,
+      title: '操作', key: 'action', width: 260,
       render: (_: any, record: FileAsset) => (
         <Space>
+          <Button type="link" size="small" icon={<EyeOutlined />}
+            onClick={() => navigate(`/file/${record.id}/preview`)}>
+            预览
+          </Button>
           <Button type="link" size="small" icon={<SafetyOutlined />}
             onClick={() => setPermTarget({ type: 'file', id: record.id, name: record.originalName })}>
             权限
