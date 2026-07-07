@@ -257,12 +257,12 @@ export default function MainLayout() {
               trigger={['click']}
               dropdownRender={() => (
                 <div style={{
-                  background: '#fff',
+                  background: '#1C2B3F',
                   borderRadius: 10,
-                  boxShadow: '0 8px 24px rgba(0,0,0,0.10)',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.50)',
                   width: 360,
                   padding: 8,
-                  border: '1px solid #f0f0f0',
+                  border: '1px solid rgba(200,150,62,0.12)',
                 }}>
                   <div style={{
                     display: 'flex',
@@ -270,7 +270,7 @@ export default function MainLayout() {
                     alignItems: 'center',
                     marginBottom: 8,
                     padding: '8px 12px',
-                    borderBottom: '1px solid #f5f5f5',
+                    borderBottom: '1px solid rgba(200,150,62,0.08)',
                   }}>
                     <Text strong style={{ fontSize: 15 }}>通知</Text>
                     <Button type="link" size="small" onClick={handleMarkAllRead}>全部已读</Button>
@@ -283,7 +283,7 @@ export default function MainLayout() {
                         <List.Item
                           style={{
                             cursor: 'pointer',
-                            background: item.isRead ? 'transparent' : '#E8EFF5',
+                            background: item.isRead ? 'transparent' : 'rgba(200,150,62,0.08)',
                             padding: '8px 12px',
                             borderRadius: 6,
                             marginBottom: 2,

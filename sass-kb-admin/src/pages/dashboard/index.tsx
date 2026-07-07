@@ -51,7 +51,7 @@ export default function DashboardPage() {
                   {cfg.icon}
                 </div>
                 <div>
-                  <div style={{ fontSize: 13, color: '#8C8C8C', marginBottom: 2 }}>{cfg.title}</div>
+                  <div style={{ fontSize: 13, color: '#8FA0B8', marginBottom: 2 }}>{cfg.title}</div>
                   <Statistic
                     value={stats?.[cfg.key] ?? '-'}
                     valueStyle={{ fontSize: 26, fontWeight: 700, color: '#E8ECF1' }}
