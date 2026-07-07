@@ -35,7 +35,8 @@ public class FileController {
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             "application/vnd.ms-powerpoint",
             "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-            "application/zip", "application/x-7z-compressed", "application/x-rar-compressed"
+            "application/zip", "application/x-7z-compressed", "application/x-rar-compressed",
+            "video/mp4"
     );
 
     private static final long MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB

@@ -2,7 +2,8 @@
 # 构建 → Docker 镜像 → 推送 GitLab Registry → 部署到 ECS
 
 stages:
-  - docker
+  - docker-backend
+  - docker-frontend
   - deploy
 
 variables:
@@ -16,7 +17,7 @@ variables:
 # ==================== Docker Stage ====================
 
 docker-backend:
-  stage: docker
+  stage: docker-backend
   image: docker:stable
   services:
     - name: docker:dind
@@ -37,7 +38,7 @@ docker-backend:
     - develop
 
 docker-frontend:
-  stage: docker
+  stage: docker-frontend
   image: node:20-alpine
   services:
     - name: docker:dind

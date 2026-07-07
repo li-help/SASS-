@@ -13,7 +13,6 @@ import HomeScreen from '@/screens/HomeScreen';
 import SpaceListScreen from '@/screens/SpaceListScreen';
 import DocDetailScreen from '@/screens/DocDetailScreen';
 import DocEditScreen from '@/screens/DocEditScreen';
-import SearchScreen from '@/screens/SearchScreen';
 import NotificationScreen from '@/screens/NotificationScreen';
 import ProfileScreen from '@/screens/ProfileScreen';
 import DocCreateScreen from '@/screens/DocCreateScreen';
@@ -24,18 +23,27 @@ import FileListScreen from '@/screens/FileListScreen';
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 const SpaceStack = createNativeStackNavigator();
+const FileStack = createNativeStackNavigator();
 const queryClient = new QueryClient();
 
 function SpaceNavigator() {
   return (
-    <SpaceStack.Navigator>
+    <SpaceStack.Navigator screenOptions={{ headerShown: false }}>
       <SpaceStack.Screen name="SpaceList" component={SpaceListScreen} options={{ title: '知识库' }} />
       <SpaceStack.Screen name="DocDetail" component={DocDetailScreen} options={{ title: '文档详情' }} />
       <SpaceStack.Screen name="DocEdit" component={DocEditScreen} options={{ title: '编辑文档' }} />
       <SpaceStack.Screen name="DocCreate" component={DocCreateScreen} options={{ title: '新建文档' }} />
       <SpaceStack.Screen name="VersionList" component={VersionListScreen} options={{ title: '版本历史' }} />
-      <SpaceStack.Screen name="FilePreview" component={FilePreviewScreen} options={{ title: '文件预览' }} />
     </SpaceStack.Navigator>
+  );
+}
+
+function FileNavigator() {
+  return (
+    <FileStack.Navigator screenOptions={{ headerShown: false }}>
+      <FileStack.Screen name="FileList" component={FileListScreen} options={{ title: '文件' }} />
+      <FileStack.Screen name="FilePreview" component={FilePreviewScreen} options={{ title: '文件预览' }} />
+    </FileStack.Navigator>
   );
 }
 
@@ -53,7 +61,6 @@ function MainTabs() {
   const tabIcons: Record<string, { focused: keyof typeof Ionicons.glyphMap; unfocused: keyof typeof Ionicons.glyphMap }> = {
     Home: { focused: 'home', unfocused: 'home-outline' },
     Spaces: { focused: 'library', unfocused: 'library-outline' },
-    Search: { focused: 'search', unfocused: 'search-outline' },
     Files: { focused: 'folder', unfocused: 'folder-outline' },
     Notifications: { focused: 'notifications', unfocused: 'notifications-outline' },
     Profile: { focused: 'person', unfocused: 'person-outline' },
@@ -62,6 +69,7 @@ function MainTabs() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
+        headerShown: false,
         tabBarActiveTintColor: '#1677ff',
         tabBarInactiveTintColor: '#999',
         tabBarIcon: ({ focused, color, size }) => {
@@ -73,8 +81,7 @@ function MainTabs() {
     >
       <Tab.Screen name="Home" component={HomeScreen} options={{ title: '工作台' }} />
       <Tab.Screen name="Spaces" component={SpaceNavigator} options={{ headerShown: false, title: '知识库' }} />
-      <Tab.Screen name="Search" component={SearchScreen} options={{ title: '搜索' }} />
-      <Tab.Screen name="Files" component={FileListScreen} options={{ title: '文件' }} />
+      <Tab.Screen name="Files" component={FileNavigator} options={{ headerShown: false, title: '文件' }} />
       <Tab.Screen
         name="Notifications"
         component={NotificationScreen}

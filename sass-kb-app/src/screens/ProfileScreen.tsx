@@ -14,9 +14,21 @@ export default function ProfileScreen() {
   };
 
   const menuItems = [
-    { icon: 'person-circle-outline' as const, label: '账号信息' },
-    { icon: 'lock-closed-outline' as const, label: '修改密码' },
-    { icon: 'information-circle-outline' as const, label: '关于' },
+    {
+      icon: 'person-circle-outline' as const,
+      label: '账号信息',
+      onPress: () => Alert.alert('账号信息', `用户名：${realName || '未设置'}\n用户ID：${userId || '-'}`),
+    },
+    {
+      icon: 'lock-closed-outline' as const,
+      label: '修改密码',
+      onPress: () => Alert.alert('修改密码', '请联系管理员修改密码'),
+    },
+    {
+      icon: 'information-circle-outline' as const,
+      label: '关于',
+      onPress: () => Alert.alert('关于 SASS 知识平台', '版本 1.0.0\n基于 Expo + React Native 构建\n支持 Web / iOS / Android'),
+    },
   ];
 
   return (
@@ -39,6 +51,7 @@ export default function ProfileScreen() {
             key={item.label}
             style={styles.menuItem}
             activeOpacity={0.6}
+            onPress={item.onPress}
           >
             <View style={styles.menuLeft}>
               <Ionicons name={item.icon} size={22} color={colors.primary} style={{ marginRight: spacing.md }} />

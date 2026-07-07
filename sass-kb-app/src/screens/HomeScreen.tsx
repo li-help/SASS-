@@ -109,12 +109,12 @@ export default function HomeScreen() {
         <TouchableOpacity
           style={styles.actionBtn}
           activeOpacity={0.7}
-          onPress={() => navigation.navigate('Search')}
+          onPress={() => navigation.navigate('Files')}
         >
           <View style={[styles.actionIconBg, { backgroundColor: colors.successLight }]}>
-            <Ionicons name="search" size={24} color={colors.success} />
+            <Ionicons name="folder" size={24} color={colors.success} />
           </View>
-          <Text style={styles.actionLabel}>搜索知识</Text>
+          <Text style={styles.actionLabel}>文件管理</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.actionBtn}

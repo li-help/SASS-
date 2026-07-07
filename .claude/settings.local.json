@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(git add *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(ssh-keygen -lf ~/.ssh/id_ed25519)",
+      "Read(//c/Users/48027/.ssh/**)"
     ]
   }
 }

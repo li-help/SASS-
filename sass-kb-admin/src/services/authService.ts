@@ -6,12 +6,6 @@ export interface DashboardStats {
   files: number;
   users: number;
   tenants: number;
-  recentDocs: Array<{
-    id: string;
-    title: string;
-    status: string;
-    updatedAt: string;
-  }>;
 }
 
 export const dashboardApi = {

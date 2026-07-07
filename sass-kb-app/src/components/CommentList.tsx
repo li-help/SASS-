@@ -27,6 +27,8 @@ export default function CommentList({ docId }: Props) {
   const [newComment, setNewComment] = useState('');
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState('');
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
@@ -49,6 +51,16 @@ export default function CommentList({ docId }: Props) {
     },
   });
 
+  const updateMut = useMutation({
+    mutationFn: ({ id, content }: { id: string; content: string }) =>
+      commentApi.update(id, content),
+    onSuccess: () => {
+      setEditingId(null);
+      setEditContent('');
+      queryClient.invalidateQueries({ queryKey: ['comments', docId] });
+    },
+  });
+
   const deleteMut = useMutation({
     mutationFn: (id: string) => commentApi.delete(id),
     onSuccess: () => {
@@ -59,6 +71,17 @@ export default function CommentList({ docId }: Props) {
   const comments = data || [];
   const flatList = flattenComments(comments);
 
+  const startEdit = (item: CommentNode) => {
+    setEditingId(item.id);
+    setEditContent(item.content);
+    setReplyTo(null); // 关闭回复框
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditContent('');
+  };
+
   const renderItem = ({ item }: { item: CommentNode & { _depth: number } }) => (
     <View style={[styles.commentItem, { marginLeft: item._depth * 20 }]}>
       <View style={styles.commentHeader}>
@@ -68,7 +91,36 @@ export default function CommentList({ docId }: Props) {
         <Text style={styles.creatorName}>{item.creatorName}</Text>
         <Text style={styles.commentTime}>{item.createdAt?.substring(0, 16)}</Text>
       </View>
-      <Text style={styles.commentContent}>{item.content}</Text>
+
+      {editingId === item.id ? (
+        <View style={styles.editRow}>
+          <TextInput
+            style={[styles.input, { flex: 1 }]}
+            value={editContent}
+            onChangeText={setEditContent}
+            autoFocus
+            multiline
+          />
+          <TouchableOpacity
+            style={styles.editConfirmBtn}
+            onPress={() => updateMut.mutate({ id: item.id, content: editContent })}
+            disabled={!editContent.trim() || updateMut.isPending}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="checkmark" size={16} color={colors.textInverse} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.editCancelBtn}
+            onPress={cancelEdit}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="close" size={16} color={colors.textSecondary} />
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <Text style={styles.commentContent}>{item.content}</Text>
+      )}
+
       <View style={styles.commentActions}>
         <TouchableOpacity
           onPress={() => setReplyTo(replyTo === item.id ? null : item.id)}
@@ -76,6 +128,13 @@ export default function CommentList({ docId }: Props) {
         >
           <Ionicons name="chatbubble-outline" size={14} color={colors.primary} />
           <Text style={styles.replyBtn}> 回复</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => startEdit(item)}
+          style={styles.actionBtn}
+        >
+          <Ionicons name="pencil-outline" size={14} color={colors.textSecondary} />
+          <Text style={styles.editBtnText}> 编辑</Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => {
@@ -90,6 +149,7 @@ export default function CommentList({ docId }: Props) {
           <Text style={styles.deleteBtn}> 删除</Text>
         </TouchableOpacity>
       </View>
+
       {replyTo === item.id && (
         <View style={styles.replyInput}>
           <TextInput
@@ -226,7 +286,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   replyBtn: { fontSize: 13, color: colors.primary },
+  editBtnText: { fontSize: 13, color: colors.textSecondary },
   deleteBtn: { fontSize: 13, color: colors.error },
+  editRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    alignItems: 'flex-end',
+    marginBottom: spacing.xs,
+  },
+  editConfirmBtn: {
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    padding: spacing.sm,
+  },
+  editCancelBtn: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    padding: spacing.sm,
+  },
   replyInput: {
     marginTop: spacing.sm,
     flexDirection: 'row',

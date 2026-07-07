@@ -1,2 +1,0 @@
--- V9: 初始菜单数据（租户首次使用时通过 init-defaults 创建，此处仅作参考）
--- 实际菜单通过 POST /api/menu/init-defaults 接口按租户动态创建

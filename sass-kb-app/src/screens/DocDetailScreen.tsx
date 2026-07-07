@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useQuery } from '@tanstack/react-query';
@@ -11,11 +11,10 @@ import { colors, spacing, radius, shadows } from '@/theme';
 
 type Props = NativeStackScreenProps<any, 'DocDetail'>;
 
-const WEBVIEW_HEIGHT = 500;
-
 export default function DocDetailScreen({ route, navigation }: Props) {
   const { docId } = route.params as { docId: string };
-  const [showComments, setShowComments] = useState(false);
+  const [webViewHeight, setWebViewHeight] = useState(100);
+  const webViewRef = useRef<WebView>(null);
 
   const { data: canEdit } = usePermission('doc', docId, 'write');
 
@@ -27,6 +26,17 @@ export default function DocDetailScreen({ route, navigation }: Props) {
       return res.data;
     },
   });
+
+  const onWebViewMessage = useCallback((event: any) => {
+    try {
+      const data = JSON.parse(event.nativeEvent.data);
+      if (data.height) {
+        setWebViewHeight(data.height + 20); // 加一点 padding
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
 
   if (isLoading) {
     return (
@@ -81,6 +91,12 @@ export default function DocDetailScreen({ route, navigation }: Props) {
   ul, ol { padding-left: 24px; }
   a { color: #1E3A5F; }
 </style>
+<script>
+  window.onload = function() {
+    var h = document.body.scrollHeight;
+    window.ReactNativeWebView.postMessage(JSON.stringify({ height: h }));
+  };
+</script>
 </head>
 <body>${contentHtml}</body>
 </html>`;
@@ -126,11 +142,13 @@ export default function DocDetailScreen({ route, navigation }: Props) {
       {/* Content */}
       <ScrollView style={styles.scrollContent}>
         <WebView
+          ref={webViewRef}
           source={{ html }}
-          style={{ height: WEBVIEW_HEIGHT }}
+          style={{ height: webViewHeight }}
           javaScriptEnabled
           scalesPageToFit
           scrollEnabled={false}
+          onMessage={onWebViewMessage}
         />
         <View style={styles.divider} />
         <CommentList docId={docId} />

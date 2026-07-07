@@ -4,9 +4,13 @@ import {
   ActivityIndicator, Alert, Linking, RefreshControl,
 } from 'react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { fileApi, type FileAsset } from '@/services/fileService';
 import { colors, spacing, radius, shadows } from '@/theme';
+
+type Nav = NativeStackNavigationProp<any>;
 
 // 需要安装: npx expo install expo-document-picker
 let DocumentPicker: any = null;
@@ -33,6 +37,7 @@ function getFileIcon(mimeType: string): keyof typeof Ionicons.glyphMap {
 
 export default function FileListScreen() {
   const queryClient = useQueryClient();
+  const navigation = useNavigation<Nav>();
   const [uploading, setUploading] = useState(false);
 
   const { data, isLoading, refetch } = useQuery({
@@ -82,6 +87,10 @@ export default function FileListScreen() {
     }
   };
 
+  const handlePreview = (file: FileAsset) => {
+    navigation.navigate('FilePreview', { fileId: file.id, fileName: file.originalName });
+  };
+
   const handleDownload = async (file: FileAsset) => {
     try {
       const res = await fileApi.getDownloadUrl(file.id);
@@ -106,7 +115,11 @@ export default function FileListScreen() {
   const files: FileAsset[] = data || [];
 
   const renderItem = ({ item }: { item: FileAsset }) => (
-    <View style={styles.fileItem}>
+    <TouchableOpacity
+      style={styles.fileItem}
+      activeOpacity={0.7}
+      onPress={() => handlePreview(item)}
+    >
       <View style={styles.fileInfo}>
         <View style={styles.fileIconBg}>
           <Ionicons name={getFileIcon(item.mimeType)} size={22} color={colors.primary} />
@@ -127,7 +140,7 @@ export default function FileListScreen() {
           <Ionicons name="trash-outline" size={16} color={colors.error} />
         </TouchableOpacity>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   return (

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { List, Tag, Spin, Empty, Button, Modal, message, Popconfirm } from 'antd';
 import { ClockCircleOutlined, EyeOutlined, DiffOutlined, RollbackOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import DOMPurify from 'dompurify';
 import { docApi } from '@/services/docService';
 import type { DocumentVersion } from '@/services/docService';
 import VersionDiff from './VersionDiff';
@@ -121,7 +122,7 @@ export default function VersionHistory({ docId }: Props) {
         width={800}
       >
         <div
-          dangerouslySetInnerHTML={{ __html: previewHtml || '' }}
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(previewHtml || '') }}
           style={{ maxHeight: 500, overflow: 'auto', padding: 16, border: '1px solid #f0f0f0', borderRadius: 8 }}
         />
       </Modal>

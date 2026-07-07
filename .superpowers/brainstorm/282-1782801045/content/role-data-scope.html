@@ -1,0 +1,79 @@
+<h2>角色编辑页 — 新增「数据域」配置</h2>
+<p class="subtitle">在现有角色表单底部新增数据域区块</p>
+
+<div class="split">
+  <div class="mockup">
+    <div class="mockup-header">编辑角色：研发部管理员</div>
+    <div class="mockup-body" style="padding: 16px; background: #fafafa; font-family: sans-serif;">
+      <div style="margin-bottom: 12px;">
+        <div class="label" style="margin-bottom: 4px;">角色名称</div>
+        <input class="mock-input" value="研发部管理员" style="width: 100%;">
+      </div>
+      <div style="margin-bottom: 12px;">
+        <div class="label" style="margin-bottom: 4px;">菜单权限</div>
+        <div style="border: 1px solid #d9d9d9; border-radius: 6px; padding: 8px; background: #fff;">
+          <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+            <span style="background: #e6f4ff; color: #1677ff; padding: 2px 8px; border-radius: 4px; font-size: 12px;">工作台</span>
+            <span style="background: #e6f4ff; color: #1677ff; padding: 2px 8px; border-radius: 4px; font-size: 12px;">知识空间</span>
+            <span style="background: #e6f4ff; color: #1677ff; padding: 2px 8px; border-radius: 4px; font-size: 12px;">文件管理</span>
+            <span style="background: #e6f4ff; color: #1677ff; padding: 2px 8px; border-radius: 4px; font-size: 12px;">用户管理</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 新增区块 -->
+      <div style="background: #fffbe6; border: 1px solid #ffe58f; border-radius: 6px; padding: 12px; margin-bottom: 8px;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+          <span style="font-size: 14px;">🛡️</span>
+          <strong style="font-size: 13px;">数据域范围</strong>
+          <span style="background: #1677ff; color: #fff; font-size: 10px; padding: 1px 6px; border-radius: 8px; margin-left: auto;">NEW</span>
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <span style="padding: 4px 12px; border-radius: 4px; font-size: 12px; background: #1677ff; color: #fff; cursor: pointer;">本部门及下级</span>
+          <span style="padding: 4px 12px; border-radius: 4px; font-size: 12px; background: #f0f0f0; color: #666;">全部数据</span>
+          <span style="padding: 4px 12px; border-radius: 4px; font-size: 12px; background: #f0f0f0; color: #666;">本部门</span>
+          <span style="padding: 4px 12px; border-radius: 4px; font-size: 12px; background: #f0f0f0; color: #666;">仅自己</span>
+          <span style="padding: 4px 12px; border-radius: 4px; font-size: 12px; background: #f0f0f0; color: #666;">自定义</span>
+        </div>
+        <div style="margin-top: 8px; font-size: 12px; color: #8c8c8c;">
+          ✅ 可查看「研发部」及下属「前端组」「后端组」的所有数据
+        </div>
+      </div>
+
+      <div style="text-align: right; margin-top: 16px;">
+        <button class="mock-button" style="margin-right: 8px; background: #fff; color: #333; border: 1px solid #d9d9d9;">取消</button>
+        <button class="mock-button" style="background: #1677ff; color: #fff;">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-header">自定义数据域（展开）</div>
+    <div class="mockup-body" style="padding: 16px; background: #fafafa; font-family: sans-serif;">
+      <div class="label" style="margin-bottom: 8px;">选择可访问的部门</div>
+      <div style="border: 1px solid #d9d9d9; border-radius: 6px; padding: 8px; background: #fff;">
+        <div style="padding: 4px 0;">
+          <span style="color: #1677ff;">📁</span> <span style="font-weight: 600;">总公司</span>
+        </div>
+        <div style="padding: 4px 0 4px 20px;">
+          <span style="color: #1677ff;">📁</span> <span style="font-weight: 600;">研发部</span>
+          <span style="color: #1677ff; margin-left: 4px;">✓</span>
+        </div>
+        <div style="padding: 4px 0 4px 40px;">
+          <span>📄</span> 前端组
+          <span style="color: #1677ff; margin-left: 4px;">✓</span>
+        </div>
+        <div style="padding: 4px 0 4px 40px;">
+          <span>📄</span> 后端组
+          <span style="color: #1677ff; margin-left: 4px;">✓</span>
+        </div>
+        <div style="padding: 4px 0 4px 20px;">
+          <span>📁</span> 市场部
+        </div>
+        <div style="padding: 4px 0 4px 20px;">
+          <span>📁</span> 运营部
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -9,6 +9,15 @@ import { colors, spacing, radius } from '@/theme';
 
 type Props = NativeStackScreenProps<any, 'DocEdit'>;
 
+/** 简易 HTML 清洗 — 移除 script 标签、事件处理器和 javascript: 链接 */
+function sanitizeHtml(html: string): string {
+  return html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/\bon\w+\s*=\s*"[^"]*"/gi, '')
+    .replace(/\bon\w+\s*=\s*'[^']*'/gi, '')
+    .replace(/javascript\s*:/gi, 'blocked:');
+}
+
 export default function DocEditScreen({ route, navigation }: Props) {
   const { docId } = route.params as { docId: string };
   const webViewRef = useRef<WebView>(null);
@@ -16,6 +25,10 @@ export default function DocEditScreen({ route, navigation }: Props) {
   const [contentHtml, setContentHtml] = useState('');
   const [version, setVersion] = useState(1);
   const [originalContentJson, setOriginalContentJson] = useState('');
+
+  // Ref 保存最新值，避免 saveMut 中的陈旧闭包
+  const latestRef = useRef({ title: '', contentHtml: '', contentJson: '', version: 1 });
+  latestRef.current = { title, contentHtml, contentJson: originalContentJson, version };
 
   const { isLoading } = useQuery({
     queryKey: ['doc', docId],
@@ -32,17 +45,24 @@ export default function DocEditScreen({ route, navigation }: Props) {
   });
 
   const saveMut = useMutation({
-    mutationFn: () =>
-      docApi.save(docId, {
-        title,
-        contentJson: originalContentJson,
-        contentHtml,
-        version,
-      }),
+    mutationFn: (html: string) => {
+      const cur = latestRef.current;
+      return docApi.save(docId, {
+        title: cur.title,
+        contentJson: cur.contentJson,
+        contentHtml: html,
+        version: cur.version,
+      });
+    },
     onSuccess: (res: any) => {
       if (res.code === 200) {
+        // 保存成功后同步 contentJson（后端可能返回更新后的值）
+        if (res.data) {
+          if (res.data.version) setVersion(res.data.version);
+          if (res.data.contentJson) setOriginalContentJson(res.data.contentJson);
+          if (res.data.contentHtml) setContentHtml(res.data.contentHtml);
+        }
         Alert.alert('提示', '保存成功');
-        if (res.data?.version) setVersion(res.data.version);
       } else if (res.code === 409) {
         Alert.alert('冲突', '文档已被他人修改，请刷新后重试');
       } else {
@@ -66,8 +86,10 @@ export default function DocEditScreen({ route, navigation }: Props) {
     try {
       const data = JSON.parse(event.nativeEvent.data);
       if (data.type === 'save' && data.html) {
-        setContentHtml(data.html);
-        saveMut.mutate();
+        const clean = sanitizeHtml(data.html);
+        setContentHtml(clean);
+        // 直接从 message 数据调用 save，确保使用最新 HTML
+        saveMut.mutate(clean);
       }
     } catch {
       // ignore parse errors

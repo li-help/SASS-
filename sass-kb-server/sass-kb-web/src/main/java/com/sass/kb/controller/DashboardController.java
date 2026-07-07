@@ -17,9 +17,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 @Tag(name = "仪表盘", description = "仪表盘统计信息")
@@ -55,7 +53,6 @@ public class DashboardController {
         result.put("files", fileCount);
         result.put("users", userCount);
         result.put("tenants", tenantCount);
-        result.put("recentDocs", new ArrayList<>());
 
         return R.ok(result);
     }

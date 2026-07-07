@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import api from '@/services/api';
 
 interface LoginResponse {
@@ -43,6 +43,9 @@ export const useAuthStore = create<AuthState>()(
       logout: () =>
         set({ accessToken: null, refreshToken: null, userId: null, realName: null }),
     }),
-    { name: 'sass-kb-auth' }
+    {
+      name: 'sass-kb-auth',
+      storage: createJSONStorage(() => sessionStorage), // sessionStorage: cleared on tab close, safer than localStorage
+    }
   )
 );

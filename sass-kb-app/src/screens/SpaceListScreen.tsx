@@ -21,6 +21,12 @@ export default function SpaceListScreen() {
   const [folderModalOpen, setFolderModalOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
 
+  // 空间管理相关状态
+  const [spaceModalOpen, setSpaceModalOpen] = useState(false);
+  const [spaceModalMode, setSpaceModalMode] = useState<'create' | 'edit'>('create');
+  const [editingSpaceId, setEditingSpaceId] = useState<string | null>(null);
+  const [spaceForm, setSpaceForm] = useState({ name: '', description: '' });
+
   const { data: spacesData, isLoading: spacesLoading, refetch: refetchSpaces } = useQuery({
     queryKey: ['spaces'],
     queryFn: () => spaceApi.list(),
@@ -38,6 +44,35 @@ export default function SpaceListScreen() {
     }, [refetchSpaces])
   );
 
+  // ---- 空间 CRUD mutations ----
+  const createSpaceMut = useMutation({
+    mutationFn: (data: { name: string; description: string }) => spaceApi.create(data),
+    onSuccess: () => {
+      setSpaceModalOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['spaces'] });
+    },
+    onError: () => Alert.alert('错误', '创建空间失败'),
+  });
+
+  const updateSpaceMut = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<Space> }) => spaceApi.update(id, data),
+    onSuccess: () => {
+      setSpaceModalOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['spaces'] });
+    },
+    onError: () => Alert.alert('错误', '更新空间失败'),
+  });
+
+  const deleteSpaceMut = useMutation({
+    mutationFn: (id: string) => spaceApi.delete(id),
+    onSuccess: () => {
+      if (selectedSpace === editingSpaceId) setSelectedSpace(null);
+      queryClient.invalidateQueries({ queryKey: ['spaces'] });
+    },
+    onError: () => Alert.alert('错误', '删除空间失败'),
+  });
+
+  // ---- 文件夹 mutations ----
   const createFolderMut = useMutation({
     mutationFn: (name: string) =>
       folderApi.create({
@@ -52,6 +87,15 @@ export default function SpaceListScreen() {
       Alert.alert('成功', '文件夹已创建');
     },
     onError: () => Alert.alert('错误', '创建文件夹失败'),
+  });
+
+  const deleteFolderMut = useMutation({
+    mutationFn: (id: string) => folderApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['space-tree', selectedSpace] });
+      Alert.alert('成功', '文件夹已删除');
+    },
+    onError: () => Alert.alert('错误', '删除文件夹失败'),
   });
 
   const handleCreateDoc = (spaceId: string, folderId?: string) => {
@@ -71,14 +115,60 @@ export default function SpaceListScreen() {
 
   const handleLongPress = (node: SpaceTreeNode) => {
     if (node.type === 'folder') {
-      Alert.alert(node.name, '选择操作', [
+      Alert.alert(node.name, '文件夹操作', [
         { text: '在此新建文档', onPress: () => handleCreateDoc(selectedSpace!, node.id) },
         { text: '新建子文件夹', onPress: () => {
           setSelectedFolderId(node.id);
           setFolderModalOpen(true);
         }},
+        { text: '删除文件夹', style: 'destructive', onPress: () => {
+          Alert.alert('确认删除', `确定删除文件夹「${node.name}」及其内容？`, [
+            { text: '取消', style: 'cancel' },
+            { text: '删除', style: 'destructive', onPress: () => deleteFolderMut.mutate(node.id) },
+          ]);
+        }},
         { text: '取消', style: 'cancel' },
       ]);
+    }
+  };
+
+  // ---- 空间操作 ----
+  const openCreateSpace = () => {
+    setSpaceModalMode('create');
+    setEditingSpaceId(null);
+    setSpaceForm({ name: '', description: '' });
+    setSpaceModalOpen(true);
+  };
+
+  const openEditSpace = (s: Space) => {
+    setSpaceModalMode('edit');
+    setEditingSpaceId(s.id);
+    setSpaceForm({ name: s.name, description: s.description || '' });
+    setSpaceModalOpen(true);
+  };
+
+  const handleSpaceLongPress = (s: Space) => {
+    Alert.alert(s.name, '空间操作', [
+      { text: '编辑', onPress: () => openEditSpace(s) },
+      { text: '删除', style: 'destructive', onPress: () => {
+        Alert.alert('确认删除', `确定删除空间「${s.name}」？此操作不可撤销。`, [
+          { text: '取消', style: 'cancel' },
+          { text: '删除', style: 'destructive', onPress: () => deleteSpaceMut.mutate(s.id) },
+        ]);
+      }},
+      { text: '取消', style: 'cancel' },
+    ]);
+  };
+
+  const submitSpaceForm = () => {
+    if (!spaceForm.name.trim()) {
+      Alert.alert('提示', '请输入空间名称');
+      return;
+    }
+    if (spaceModalMode === 'create') {
+      createSpaceMut.mutate(spaceForm);
+    } else if (editingSpaceId) {
+      updateSpaceMut.mutate({ id: editingSpaceId, data: spaceForm });
     }
   };
 
@@ -121,6 +211,15 @@ export default function SpaceListScreen() {
   if (!selectedSpace) {
     return (
       <View style={styles.container}>
+        {/* 空间列表 Header + 新建按钮 */}
+        <View style={styles.headerBar}>
+          <Text style={styles.headerTitle}>知识空间</Text>
+          <TouchableOpacity style={styles.addBtn} onPress={openCreateSpace} activeOpacity={0.7}>
+            <Ionicons name="add" size={18} color={colors.textInverse} />
+            <Text style={styles.addBtnText}> 新建</Text>
+          </TouchableOpacity>
+        </View>
+
         {spacesLoading ? (
           <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 60 }} />
         ) : (
@@ -139,6 +238,8 @@ export default function SpaceListScreen() {
                 style={styles.spaceCard}
                 activeOpacity={0.7}
                 onPress={() => setSelectedSpace(item.id)}
+                onLongPress={() => handleSpaceLongPress(item)}
+                delayLongPress={500}
               >
                 <View style={styles.spaceIconBg}>
                   <Ionicons name="folder-open" size={28} color={colors.primary} />
@@ -161,6 +262,59 @@ export default function SpaceListScreen() {
             contentContainerStyle={styles.listContent}
           />
         )}
+
+        {/* 空间创建/编辑 Modal */}
+        <Modal
+          visible={spaceModalOpen}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setSpaceModalOpen(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalBox}>
+              <Text style={styles.modalTitle}>
+                {spaceModalMode === 'create' ? '新建知识空间' : '编辑知识空间'}
+              </Text>
+              <TextInput
+                style={styles.modalInput}
+                value={spaceForm.name}
+                onChangeText={(t) => setSpaceForm((p) => ({ ...p, name: t }))}
+                placeholder="空间名称"
+                placeholderTextColor={colors.textTertiary}
+                autoFocus
+              />
+              <TextInput
+                style={[styles.modalInput, { height: 80 }]}
+                value={spaceForm.description}
+                onChangeText={(t) => setSpaceForm((p) => ({ ...p, description: t }))}
+                placeholder="描述（可选）"
+                placeholderTextColor={colors.textTertiary}
+                multiline
+                textAlignVertical="top"
+              />
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={styles.modalCancelBtn}
+                  onPress={() => setSpaceModalOpen(false)}
+                >
+                  <Text style={styles.modalCancelText}>取消</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalConfirmBtn, !spaceForm.name.trim() && styles.disabledBtn]}
+                  onPress={submitSpaceForm}
+                  disabled={!spaceForm.name.trim() || createSpaceMut.isPending || updateSpaceMut.isPending}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.modalConfirmText}>
+                    {createSpaceMut.isPending || updateSpaceMut.isPending
+                      ? '保存中...'
+                      : spaceModalMode === 'create' ? '创建' : '保存'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </View>
     );
   }
@@ -265,6 +419,27 @@ export default function SpaceListScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bgPage },
+  headerBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.bgCard,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.borderLight,
+  },
+  headerTitle: { fontSize: 18, fontWeight: '600', color: colors.textPrimary },
+  addBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    ...shadows.sm,
+  },
+  addBtnText: { color: colors.textInverse, fontSize: 14, fontWeight: '600' },
   listContent: { padding: spacing.lg, paddingBottom: spacing.xxl },
   spaceCard: {
     flexDirection: 'row',
@@ -380,7 +555,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     fontSize: 15,
     backgroundColor: colors.bgInput,
-    marginBottom: spacing.xl,
+    marginBottom: spacing.md,
     color: colors.textPrimary,
   },
   modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.sm + 2 },

@@ -1,5 +1,6 @@
 import { Spin, Empty } from 'antd';
 import { useQuery } from '@tanstack/react-query';
+import DOMPurify from 'dompurify';
 import { docApi } from '@/services/docService';
 
 interface Props {
@@ -29,14 +30,14 @@ export default function VersionDiff({ docId, v1, v2 }: Props) {
       <div style={{ flex: 1, border: '1px solid #f0f0f0', borderRadius: 8, padding: 12 }}>
         <div style={{ fontWeight: 600, marginBottom: 8, color: '#ff4d4f' }}>旧版本 v{d.v2Version}</div>
         <div
-          dangerouslySetInnerHTML={{ __html: d.v2 || '<p style="color:#999">空内容</p>' }}
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(d.v2 || '<p style="color:#999">空内容</p>') }}
           style={{ lineHeight: 1.8, fontSize: 14 }}
         />
       </div>
       <div style={{ flex: 1, border: '1px solid #f0f0f0', borderRadius: 8, padding: 12 }}>
         <div style={{ fontWeight: 600, marginBottom: 8, color: '#52c41a' }}>新版本 v{d.v1Version}</div>
         <div
-          dangerouslySetInnerHTML={{ __html: d.v1 || '<p style="color:#999">空内容</p>' }}
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(d.v1 || '<p style="color:#999">空内容</p>') }}
           style={{ lineHeight: 1.8, fontSize: 14 }}
         />
       </div>

@@ -12,7 +12,11 @@ const getBaseUrl = (): string => {
   if (Platform.OS === 'web') {
     return '/api';
   }
-  // 原生 App 生产环境地址（发布前替换为实际地址）
+  // 原生 App 生产环境地址
+  // 发布前：设置 EXPO_PUBLIC_API_URL 环境变量，或直接替换为实际地址
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    return process.env.EXPO_PUBLIC_API_URL;
+  }
   return 'https://your-production-api.com/api';
 };
 

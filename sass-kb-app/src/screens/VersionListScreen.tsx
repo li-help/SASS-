@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  ActivityIndicator, Modal,
+  ActivityIndicator, Modal, Alert,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { docApi, type DocumentVersion } from '@/services/docService';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -14,9 +14,12 @@ type Props = NativeStackScreenProps<any, 'VersionList'>;
 
 export default function VersionListScreen({ route, navigation }: Props) {
   const { docId } = route.params as { docId: string };
+  const queryClient = useQueryClient();
   const [previewContent, setPreviewContent] = useState<{
     versionNumber: number;
-    html: string;
+    contentHtml: string;
+    contentJson: string;
+    title: string;
   } | null>(null);
 
   const { data, isLoading, refetch } = useQuery({
@@ -24,6 +27,45 @@ export default function VersionListScreen({ route, navigation }: Props) {
     queryFn: async () => {
       const res = await docApi.getVersions(docId);
       return res.data as DocumentVersion[];
+    },
+  });
+
+  // 获取当前文档信息用于恢复
+  const { data: currentDoc } = useQuery({
+    queryKey: ['doc', docId],
+    queryFn: async () => {
+      const res = await docApi.getById(docId);
+      return res.data;
+    },
+    enabled: false, // 仅在恢复时手动触发
+  });
+
+  const restoreMut = useMutation({
+    mutationFn: async () => {
+      if (!previewContent) return;
+      // 获取当前文档以拿到最新 version
+      const docRes = await docApi.getById(docId);
+      if (docRes.code !== 200) throw new Error('获取文档失败');
+      const doc = docRes.data;
+      return docApi.save(docId, {
+        title: previewContent.title,
+        contentJson: previewContent.contentJson,
+        contentHtml: previewContent.contentHtml,
+        version: doc.version,
+      });
+    },
+    onSuccess: () => {
+      Alert.alert('成功', `已恢复到版本 v${previewContent?.versionNumber}`);
+      setPreviewContent(null);
+      queryClient.invalidateQueries({ queryKey: ['doc', docId] });
+      queryClient.invalidateQueries({ queryKey: ['doc-versions', docId] });
+    },
+    onError: (e: any) => {
+      if (e?.response?.status === 409) {
+        Alert.alert('冲突', '文档已被他人修改，请刷新后重试');
+      } else {
+        Alert.alert('错误', '恢复版本失败');
+      }
     },
   });
 
@@ -35,12 +77,29 @@ export default function VersionListScreen({ route, navigation }: Props) {
       if (res.data) {
         setPreviewContent({
           versionNumber,
-          html: res.data.contentHtml || '<p>空内容</p>',
+          contentHtml: res.data.contentHtml || '<p>空内容</p>',
+          contentJson: res.data.contentJson || '',
+          title: currentDoc?.title || '',
         });
       }
     } catch {
       // ignore
     }
+  };
+
+  const handleRestore = () => {
+    Alert.alert(
+      '恢复版本',
+      `确定恢复到版本 v${previewContent?.versionNumber}？当前内容将被覆盖。`,
+      [
+        { text: '取消', style: 'cancel' },
+        {
+          text: '恢复',
+          style: 'destructive',
+          onPress: () => restoreMut.mutate(),
+        },
+      ]
+    );
   };
 
   const renderItem = ({ item, index }: { item: DocumentVersion; index: number }) => {
@@ -120,12 +179,19 @@ export default function VersionListScreen({ route, navigation }: Props) {
             <Text style={styles.modalTitle}>
               版本 v{previewContent?.versionNumber}
             </Text>
-            <View style={{ width: 24 }} />
+            <TouchableOpacity
+              onPress={handleRestore}
+              disabled={restoreMut.isPending}
+              style={styles.restoreBtn}
+            >
+              <Ionicons name="refresh" size={18} color={colors.textInverse} />
+              <Text style={styles.restoreBtnText}> {restoreMut.isPending ? '恢复中...' : '恢复'}</Text>
+            </TouchableOpacity>
           </View>
           {previewContent && (
             <WebView
               source={{
-                html: `<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"><style>body{font-family:-apple-system,sans-serif;padding:16px;line-height:1.8;font-size:16px;color:#1F1F1F;}h1,h2,h3{color:#1E3A5F;}img{max-width:100%;border-radius:6px;}table{width:100%;border-collapse:collapse;}td,th{border:1px solid #E8E8E8;padding:8px;}pre{background:#F0F2F5;padding:12px;border-radius:6px;}a{color:#1E3A5F;}</style></head><body>${previewContent.html}</body></html>`,
+                html: `<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"><style>body{font-family:-apple-system,sans-serif;padding:16px;line-height:1.8;font-size:16px;color:#1F1F1F;}h1,h2,h3{color:#1E3A5F;}img{max-width:100%;border-radius:6px;}table{width:100%;border-collapse:collapse;}td,th{border:1px solid #E8E8E8;padding:8px;}pre{background:#F0F2F5;padding:12px;border-radius:6px;}a{color:#1E3A5F;}</style></head><body>${previewContent.contentHtml}</body></html>`,
               }}
               style={styles.webview}
             />
@@ -208,5 +274,14 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.borderLight,
   },
   modalTitle: { fontSize: 16, fontWeight: '600', color: colors.textPrimary },
+  restoreBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.warning,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  restoreBtnText: { color: colors.textInverse, fontSize: 13, fontWeight: '600' },
   webview: { flex: 1 },
 });

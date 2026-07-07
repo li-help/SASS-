@@ -1,0 +1,115 @@
+<h2>部门管理页 + 用户绑定</h2>
+<p class="subtitle">新增在「用户管理」下或作为独立菜单，展示部门树 & 用户部门绑定</p>
+
+<div class="split">
+  <div class="mockup">
+    <div class="mockup-header">🏗️ 部门管理</div>
+    <div class="mockup-body" style="padding: 0; background: #fafafa; font-family: sans-serif;">
+      <!-- toolbar -->
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid #f0f0f0;">
+        <div style="display: flex; gap: 8px;">
+          <button class="mock-button" style="background: #1677ff; color: #fff; font-size: 12px;">+ 新增部门</button>
+          <button class="mock-button" style="background: #fff; color: #333; border: 1px solid #d9d9d9; font-size: 12px;">展开全部</button>
+        </div>
+        <input class="mock-input" placeholder="搜索部门..." style="width: 180px; font-size: 12px;">
+      </div>
+      <!-- tree -->
+      <div style="padding: 12px 16px;">
+        <!-- level 1 -->
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f5f5f5;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="color: #999; font-size: 12px;">▼</span>
+            <span style="font-size: 16px;">🏢</span>
+            <span style="font-weight: 600;">总公司</span>
+            <span style="background: #f0f0f0; color: #999; font-size: 11px; padding: 1px 8px; border-radius: 10px;">12人</span>
+          </div>
+          <div style="display: flex; gap: 4px;">
+            <span style="color: #1677ff; font-size: 12px; cursor: pointer;">编辑</span>
+            <span style="color: #ff4d4f; font-size: 12px; cursor: pointer;">删除</span>
+          </div>
+        </div>
+        <!-- level 2 -->
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 0 8px 24px; border-bottom: 1px solid #f5f5f5;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="color: #999; font-size: 12px;">▼</span>
+            <span style="font-size: 16px;">📁</span>
+            <span style="font-weight: 600;">研发部</span>
+            <span style="background: #f0f0f0; color: #999; font-size: 11px; padding: 1px 8px; border-radius: 10px;">8人</span>
+          </div>
+          <div style="display: flex; gap: 4px;">
+            <span style="color: #1677ff; font-size: 12px; cursor: pointer;">编辑</span>
+            <span style="color: #1677ff; font-size: 12px; cursor: pointer;">+子部门</span>
+            <span style="color: #ff4d4f; font-size: 12px; cursor: pointer;">删除</span>
+          </div>
+        </div>
+        <!-- level 3 -->
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 0 6px 48px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 14px;">👥</span>
+            <span>前端组</span>
+            <span style="background: #f0f0f0; color: #999; font-size: 11px; padding: 1px 8px; border-radius: 10px;">3人</span>
+          </div>
+          <div style="display: flex; gap: 4px;">
+            <span style="color: #1677ff; font-size: 12px; cursor: pointer;">编辑</span>
+            <span style="color: #ff4d4f; font-size: 12px; cursor: pointer;">删除</span>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 0 6px 48px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 14px;">👥</span>
+            <span>后端组</span>
+            <span style="background: #f0f0f0; color: #999; font-size: 11px; padding: 1px 8px; border-radius: 10px;">5人</span>
+          </div>
+          <div style="display: flex; gap: 4px;">
+            <span style="color: #1677ff; font-size: 12px; cursor: pointer;">编辑</span>
+            <span style="color: #ff4d4f; font-size: 12px; cursor: pointer;">删除</span>
+          </div>
+        </div>
+        <!-- level 2 again -->
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 0 8px 24px; border-bottom: 1px solid #f5f5f5;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="color: #999; font-size: 12px;">▶</span>
+            <span style="font-size: 16px;">📁</span>
+            <span>市场部</span>
+            <span style="background: #f0f0f0; color: #999; font-size: 11px; padding: 1px 8px; border-radius: 10px;">4人</span>
+          </div>
+          <div style="display: flex; gap: 4px;">
+            <span style="color: #1677ff; font-size: 12px; cursor: pointer;">编辑</span>
+            <span style="color: #1677ff; font-size: 12px; cursor: pointer;">+子部门</span>
+            <span style="color: #ff4d4f; font-size: 12px; cursor: pointer;">删除</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-header">👤 用户编辑 — 绑定部门</div>
+    <div class="mockup-body" style="padding: 16px; background: #fafafa; font-family: sans-serif;">
+      <div style="margin-bottom: 12px;">
+        <div class="label" style="margin-bottom: 4px;">用户名</div>
+        <input class="mock-input" value="张三" style="width: 100%;">
+      </div>
+      <div style="margin-bottom: 12px;">
+        <div class="label" style="margin-bottom: 4px;">所属部门</div>
+        <div style="border: 1px solid #d9d9d9; border-radius: 6px; padding: 8px; background: #fff;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span>🏢 总公司 / 📁 研发部 / 👥 前端组</span>
+            <span style="color: #999; font-size: 12px;">▼</span>
+          </div>
+        </div>
+      </div>
+      <div style="margin-bottom: 12px;">
+        <div class="label" style="margin-bottom: 4px;">角色</div>
+        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+          <span style="background: #e6f4ff; color: #1677ff; padding: 2px 10px; border-radius: 4px; font-size: 12px;">研发部管理员</span>
+          <span style="background: #f0f0f0; color: #666; padding: 2px 10px; border-radius: 4px; font-size: 12px;">普通用户</span>
+        </div>
+      </div>
+      <div style="font-size: 12px; color: #8c8c8c; background: #fffbe6; padding: 8px; border-radius: 4px; margin-top: 12px;">
+        💡 角色「研发部管理员」数据域 = 本部门及下级<br>
+        → 张三可查看「研发部 + 前端组 + 后端组」的所有空间/文档/文件/用户
+      </div>
+    </div>
+  </div>
+</div>

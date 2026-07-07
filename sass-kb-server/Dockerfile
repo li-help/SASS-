@@ -14,7 +14,7 @@ COPY sass-kb-notification/pom.xml sass-kb-notification/
 COPY sass-kb-web/pom.xml sass-kb-web/
 RUN mvn dependency:go-offline -q
 COPY . .
-RUN mvn clean package -DskipTests -q
+RUN mvn clean package -DskipTests -T 1C -q
 
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
