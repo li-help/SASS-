@@ -1,8 +1,8 @@
 package com.sass.kb.auth.listener;
 
 import cn.hutool.core.util.IdUtil;
-import com.sass.kb.auth.entity.AuditLog;
-import com.sass.kb.auth.mapper.AuditLogMapper;
+import com.sass.kb.common.entity.AuditLog;
+import com.sass.kb.common.mapper.AuditLogMapper;
 import com.sass.kb.common.event.EntityEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
