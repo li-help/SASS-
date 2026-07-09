@@ -4,10 +4,10 @@ CREATE TABLE IF NOT EXISTS audit_log (
     tenant_id VARCHAR(32),
     user_id VARCHAR(32),
     username VARCHAR(64),
-    action VARCHAR(32) NOT NULL COMMENT 'CREATED/UPDATED/DELETED',
-    target_type VARCHAR(32) NOT NULL COMMENT 'FILE/ROLE/USER/TENANT/MENU/DOC/SPACE',
+    action VARCHAR(32) NOT NULL,
+    target_type VARCHAR(32) NOT NULL,
     target_id VARCHAR(32),
-    detail VARCHAR(500) COMMENT '操作描述',
+    detail VARCHAR(500),
     ip VARCHAR(64),
     created_at TIMESTAMP DEFAULT now()
 );
