@@ -20,13 +20,15 @@ public class RoleService {
     public List<Role> initDefaultRoles(String tenantId) {
         List<Role> created = new ArrayList<>();
 
-        Long count = roleMapper.selectCount(new LambdaQueryWrapper<Role>()
-                .eq(Role::getTenantId, tenantId));
-        if (count > 0) {
+        // 用名称做幂等检查，避免 autoResultMap+jsonb 导致 COUNT 异常
+        boolean hasAdmin = roleMapper.selectCount(new LambdaQueryWrapper<Role>()
+                .eq(Role::getTenantId, tenantId)
+                .eq(Role::getName, "管理员")) > 0;
+        if (hasAdmin) {
             return created;
         }
 
-        // 管理员 - 拥有所有权限
+        // 管理员
         Role admin = new Role();
         admin.setId(IdUtil.fastSimpleUUID());
         admin.setTenantId(tenantId);
@@ -36,7 +38,7 @@ public class RoleService {
         roleMapper.insert(admin);
         created.add(admin);
 
-        // 普通用户 - 可编辑、下载、读取文件
+        // 普通用户
         Role user = new Role();
         user.setId(IdUtil.fastSimpleUUID());
         user.setTenantId(tenantId);
@@ -49,7 +51,7 @@ public class RoleService {
         roleMapper.insert(user);
         created.add(user);
 
-        // 访客 - 仅读取和下载
+        // 访客
         Role guest = new Role();
         guest.setId(IdUtil.fastSimpleUUID());
         guest.setTenantId(tenantId);
@@ -65,12 +67,13 @@ public class RoleService {
     }
 
     public Role findByName(String tenantId, String name) {
-        Role role = roleMapper.selectOne(new LambdaQueryWrapper<Role>()
+        List<Role> roles = roleMapper.selectList(new LambdaQueryWrapper<Role>()
                 .eq(Role::getTenantId, tenantId)
-                .eq(Role::getName, name));
-        if (role == null) {
+                .eq(Role::getName, name)
+                .last("LIMIT 1"));
+        if (roles.isEmpty()) {
             throw new BizException(404, "角色不存在: " + name);
         }
-        return role;
+        return roles.get(0);
     }
 }

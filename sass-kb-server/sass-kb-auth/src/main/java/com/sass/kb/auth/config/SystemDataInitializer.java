@@ -9,6 +9,7 @@ import com.sass.kb.auth.service.MenuService;
 import com.sass.kb.auth.service.RoleService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "app.skip-init-defaults", havingValue = "false", matchIfMissing = true)
 public class SystemDataInitializer {
 
     private static final String SYSTEM_TENANT_ID = "system-tenant";
@@ -31,38 +33,42 @@ public class SystemDataInitializer {
 
     @EventListener(ApplicationReadyEvent.class)
     public void init() {
-        log.info("[SystemInit] 检查 system-tenant 默认数据…");
+        try {
+            log.info("[SystemInit] 检查 system-tenant 默认数据…");
 
-        // 1. 初始化默认角色（已有则跳过）
-        roleService.initDefaultRoles(SYSTEM_TENANT_ID);
-        log.info("[SystemInit] 默认角色检查完成");
+            // 1. 初始化默认角色（已有则跳过）
+            roleService.initDefaultRoles(SYSTEM_TENANT_ID);
+            log.info("[SystemInit] 默认角色检查完成");
 
-        // 2. 初始化默认菜单（已有则跳过）
-        menuService.initDefaultMenus(SYSTEM_TENANT_ID);
-        log.info("[SystemInit] 默认菜单检查完成");
+            // 2. 初始化默认菜单（已有则跳过）
+            menuService.initDefaultMenus(SYSTEM_TENANT_ID);
+            log.info("[SystemInit] 默认菜单检查完成");
 
-        // 3. 为 admin 用户分配「管理员」角色（幂等）
-        Role adminRole = roleService.findByName(SYSTEM_TENANT_ID, "管理员");
-        boolean exists = permissionRuleMapper.exists(new LambdaQueryWrapper<PermissionRule>()
-                .eq(PermissionRule::getTenantId, SYSTEM_TENANT_ID)
-                .eq(PermissionRule::getSubjectType, "user")
-                .eq(PermissionRule::getSubjectId, ADMIN_USER_ID)
-                .eq(PermissionRule::getTargetType, "role")
-                .eq(PermissionRule::getTargetId, adminRole.getId()));
-        if (!exists) {
-            PermissionRule pr = new PermissionRule();
-            pr.setId(IdUtil.fastSimpleUUID());
-            pr.setTenantId(SYSTEM_TENANT_ID);
-            pr.setSubjectType("user");
-            pr.setSubjectId(ADMIN_USER_ID);
-            pr.setTargetType("role");
-            pr.setTargetId(adminRole.getId());
-            pr.setAction("member");
-            pr.setEffect("allow");
-            permissionRuleMapper.insert(pr);
-            log.info("[SystemInit] 已为 admin 分配「管理员」角色");
-        } else {
-            log.info("[SystemInit] admin 角色绑定已存在，跳过");
+            // 3. 为 admin 用户分配「管理员」角色（幂等）
+            Role adminRole = roleService.findByName(SYSTEM_TENANT_ID, "管理员");
+            boolean exists = permissionRuleMapper.exists(new LambdaQueryWrapper<PermissionRule>()
+                    .eq(PermissionRule::getTenantId, SYSTEM_TENANT_ID)
+                    .eq(PermissionRule::getSubjectType, "user")
+                    .eq(PermissionRule::getSubjectId, ADMIN_USER_ID)
+                    .eq(PermissionRule::getTargetType, "role")
+                    .eq(PermissionRule::getTargetId, adminRole.getId()));
+            if (!exists) {
+                PermissionRule pr = new PermissionRule();
+                pr.setId(IdUtil.fastSimpleUUID());
+                pr.setTenantId(SYSTEM_TENANT_ID);
+                pr.setSubjectType("user");
+                pr.setSubjectId(ADMIN_USER_ID);
+                pr.setTargetType("role");
+                pr.setTargetId(adminRole.getId());
+                pr.setAction("member");
+                pr.setEffect("allow");
+                permissionRuleMapper.insert(pr);
+                log.info("[SystemInit] 已为 admin 分配「管理员」角色");
+            } else {
+                log.info("[SystemInit] admin 角色绑定已存在，跳过");
+            }
+        } catch (Exception e) {
+            log.warn("[SystemInit] 初始化过程中出现异常（非致命）: {}", e.getMessage());
         }
     }
 }

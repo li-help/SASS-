@@ -51,119 +51,39 @@ public class MenuService {
     public List<Menu> initDefaultMenus(String tenantId) {
         List<Menu> created = new ArrayList<>();
 
-        Long count = menuMapper.selectCount(new LambdaQueryWrapper<Menu>()
-                .eq(Menu::getTenantId, tenantId));
-        if (count > 0) {
-            return created;
+        // 用固定 ID 确保幂等：每个菜单先查后插，已存在则跳过
+        String[][] defaults = {
+            {"dashboard", "工作台", "M", "/dashboard", null, null, "DashboardOutlined", "1"},
+            {"file", "文件管理", "M", "/file", null, null, "FileOutlined", "2"},
+            {"user", "用户管理", "C", "/user", "user/index", "system:user:list", "UserOutlined", "3"},
+            {"role", "角色权限", "C", "/role", "role/index", "system:role:list", "SafetyOutlined", "4"},
+            {"tenant", "租户管理", "C", "/tenant", "tenant/index", "system:tenant:list", "TeamOutlined", "5"},
+            {"onboarding-review", "入驻审核", "C", "/onboarding-review", "onboarding-review/index", "system:onboarding:list", "ShopOutlined", "6"},
+            {"menu", "菜单管理", "C", "/menu", "menu/index", "system:menu:list", "MenuOutlined", "7"},
+        };
+
+        for (String[] def : defaults) {
+            String permId = def[0];
+            boolean exists = menuMapper.selectCount(new LambdaQueryWrapper<Menu>()
+                    .eq(Menu::getTenantId, tenantId)
+                    .eq(Menu::getPath, def[3])) > 0;
+            if (exists) continue;
+
+            Menu m = new Menu();
+            m.setId(IdUtil.fastSimpleUUID());
+            m.setTenantId(tenantId);
+            m.setName(def[1]);
+            m.setMenuType(def[2]);
+            m.setPath(def[3]);
+            m.setSortOrder(Integer.parseInt(def[7]));
+            m.setVisible(true);
+            m.setStatus("0");
+            if (def[4] != null) m.setComponent(def[4]);
+            if (def[5] != null) m.setPerms(def[5]);
+            if (def[6] != null) m.setIcon(def[6]);
+            menuMapper.insert(m);
+            created.add(m);
         }
-
-        // 1. 工作台（目录）
-        Menu dashboard = new Menu();
-        dashboard.setId(IdUtil.fastSimpleUUID());
-        dashboard.setTenantId(tenantId);
-        dashboard.setName("工作台");
-        dashboard.setMenuType("M");
-        dashboard.setPath("/dashboard");
-        dashboard.setIcon("DashboardOutlined");
-        dashboard.setSortOrder(1);
-        dashboard.setVisible(true);
-        dashboard.setStatus("0");
-        menuMapper.insert(dashboard);
-        created.add(dashboard);
-
-        // 2. 文件管理（目录）
-        Menu file = new Menu();
-        file.setId(IdUtil.fastSimpleUUID());
-        file.setTenantId(tenantId);
-        file.setName("文件管理");
-        file.setMenuType("M");
-        file.setPath("/file");
-        file.setIcon("FileOutlined");
-        file.setSortOrder(2);
-        file.setVisible(true);
-        file.setStatus("0");
-        menuMapper.insert(file);
-        created.add(file);
-
-        // 3. 用户管理（菜单）
-        Menu user = new Menu();
-        user.setId(IdUtil.fastSimpleUUID());
-        user.setTenantId(tenantId);
-        user.setName("用户管理");
-        user.setMenuType("C");
-        user.setPath("/user");
-        user.setComponent("user/index");
-        user.setPerms("system:user:list");
-        user.setIcon("UserOutlined");
-        user.setSortOrder(3);
-        user.setVisible(true);
-        user.setStatus("0");
-        menuMapper.insert(user);
-        created.add(user);
-
-        // 4. 角色权限（菜单）
-        Menu role = new Menu();
-        role.setId(IdUtil.fastSimpleUUID());
-        role.setTenantId(tenantId);
-        role.setName("角色权限");
-        role.setMenuType("C");
-        role.setPath("/role");
-        role.setComponent("role/index");
-        role.setPerms("system:role:list");
-        role.setIcon("SafetyOutlined");
-        role.setSortOrder(4);
-        role.setVisible(true);
-        role.setStatus("0");
-        menuMapper.insert(role);
-        created.add(role);
-
-        // 5. 租户管理（菜单）
-        Menu tenant = new Menu();
-        tenant.setId(IdUtil.fastSimpleUUID());
-        tenant.setTenantId(tenantId);
-        tenant.setName("租户管理");
-        tenant.setMenuType("C");
-        tenant.setPath("/tenant");
-        tenant.setComponent("tenant/index");
-        tenant.setPerms("system:tenant:list");
-        tenant.setIcon("TeamOutlined");
-        tenant.setSortOrder(5);
-        tenant.setVisible(true);
-        tenant.setStatus("0");
-        menuMapper.insert(tenant);
-        created.add(tenant);
-
-        // 6. 入驻审核（菜单）
-        Menu onboarding = new Menu();
-        onboarding.setId(IdUtil.fastSimpleUUID());
-        onboarding.setTenantId(tenantId);
-        onboarding.setName("入驻审核");
-        onboarding.setMenuType("C");
-        onboarding.setPath("/onboarding-review");
-        onboarding.setComponent("onboarding-review/index");
-        onboarding.setPerms("system:onboarding:list");
-        onboarding.setIcon("ShopOutlined");
-        onboarding.setSortOrder(6);
-        onboarding.setVisible(true);
-        onboarding.setStatus("0");
-        menuMapper.insert(onboarding);
-        created.add(onboarding);
-
-        // 7. 菜单管理（菜单）
-        Menu menuMgr = new Menu();
-        menuMgr.setId(IdUtil.fastSimpleUUID());
-        menuMgr.setTenantId(tenantId);
-        menuMgr.setName("菜单管理");
-        menuMgr.setMenuType("C");
-        menuMgr.setPath("/menu");
-        menuMgr.setComponent("menu/index");
-        menuMgr.setPerms("system:menu:list");
-        menuMgr.setIcon("MenuOutlined");
-        menuMgr.setSortOrder(7);
-        menuMgr.setVisible(true);
-        menuMgr.setStatus("0");
-        menuMapper.insert(menuMgr);
-        created.add(menuMgr);
 
         return created;
     }
