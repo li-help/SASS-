@@ -11,6 +11,7 @@ COPY sass-kb-file/pom.xml sass-kb-file/
 COPY sass-kb-search/pom.xml sass-kb-search/
 COPY sass-kb-collaboration/pom.xml sass-kb-collaboration/
 COPY sass-kb-notification/pom.xml sass-kb-notification/
+COPY sass-kb-onboarding/pom.xml sass-kb-onboarding/
 COPY sass-kb-web/pom.xml sass-kb-web/
 RUN mvn dependency:go-offline -q
 COPY . .

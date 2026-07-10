@@ -1,7 +1,8 @@
 # 生产环境 Docker Compose
 # 用法：在 ECS 服务器 /opt/sass-kb/ 目录下执行
-#   docker compose up -d
-#   docker compose pull  # 拉取最新镜像
+#   1. 复制 .env.example 为 .env 并填写实际值
+#   2. docker compose up -d
+#   3. docker compose pull  # 拉取最新镜像
 
 services:
   # ========== 基础设施 ==========
@@ -33,6 +34,11 @@ services:
     volumes:
       - /opt/sass-kb/data/esdata:/usr/share/elasticsearch/data
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -q 'green\|yellow'"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
 
   minio:
     image: minio/minio
@@ -46,6 +52,11 @@ services:
     volumes:
       - /opt/sass-kb/data/miniodata:/data
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
@@ -53,6 +64,11 @@ services:
       - "127.0.0.1:6379:6379"
     restart: always
     command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
@@ -64,10 +80,15 @@ services:
     volumes:
       - /opt/sass-kb/data/rabbitmq:/var/lib/rabbitmq
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "rabbitmq-diagnostics -q ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # ========== 后端服务 ==========
   backend:
-    image: ${CI_REGISTRY_IMAGE}/sass-kb-server:latest
+    image: ${CI_REGISTRY_IMAGE:-sass-kb}/sass-kb-server:latest
     environment:
       SPRING_PROFILES_ACTIVE: prod
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/sass_kb
@@ -95,18 +116,18 @@ services:
       postgres:
         condition: service_healthy
       elasticsearch:
-        condition: service_started
+        condition: service_healthy
       rabbitmq:
-        condition: service_started
+        condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
       minio:
-        condition: service_started
+        condition: service_healthy
     restart: always
 
   # ========== 前端 (Nginx) ==========
   frontend:
-    image: ${CI_REGISTRY_IMAGE}/sass-kb-admin:latest
+    image: ${CI_REGISTRY_IMAGE:-sass-kb}/sass-kb-admin:latest
     ports:
       - "80:80"
     depends_on:
