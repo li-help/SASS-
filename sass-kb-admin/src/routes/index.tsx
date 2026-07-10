@@ -3,6 +3,7 @@ import { lazy } from 'react';
 import MainLayout from '@/layouts/MainLayout';
 import AuthLayout from '@/layouts/AuthLayout';
 import AuthGuard from './AuthGuard';
+import ErrorPage from '@/pages/error-page';
 
 const LoginPage = lazy(() => import('@/pages/login'));
 const RegisterPage = lazy(() => import('@/pages/register'));
@@ -18,10 +19,15 @@ const MenuPage = lazy(() => import('@/pages/menu'));
 const FilePreviewPage = lazy(() => import('@/pages/file/preview'));
 const ProfilePage = lazy(() => import('@/pages/profile'));
 const AuditPage = lazy(() => import('@/pages/audit'));
+const CoursePage = lazy(() => import('@/pages/course'));
+const CourseCategoryPage = lazy(() => import('@/pages/course-category'));
+const CourseChapterPage = lazy(() => import('@/pages/course-chapter'));
+const TeacherPage = lazy(() => import('@/pages/teacher'));
 
 export const router = createBrowserRouter([
   {
     element: <AuthLayout />,
+    errorElement: <ErrorPage />,
     children: [
       { path: 'login', element: <LoginPage /> },
       { path: 'register', element: <RegisterPage /> },
@@ -31,6 +37,7 @@ export const router = createBrowserRouter([
   },
   {
     path: '/',
+    errorElement: <ErrorPage />,
     element: (
       <AuthGuard>
         <MainLayout />
@@ -48,6 +55,10 @@ export const router = createBrowserRouter([
       { path: 'file/:id/preview', handle: { breadcrumb: '文件预览' }, element: <FilePreviewPage /> },
       { path: 'profile', handle: { breadcrumb: '个人中心' }, element: <ProfilePage /> },
       { path: 'audit', handle: { breadcrumb: '审计日志' }, element: <AuditPage /> },
+      { path: 'course', handle: { breadcrumb: '课程管理' }, element: <CoursePage /> },
+      { path: 'course-category', handle: { breadcrumb: '课程分类' }, element: <CourseCategoryPage /> },
+      { path: 'course-chapter', handle: { breadcrumb: '章节管理' }, element: <CourseChapterPage /> },
+      { path: 'teacher', handle: { breadcrumb: '讲师管理' }, element: <TeacherPage /> },
     ],
   },
 ]);

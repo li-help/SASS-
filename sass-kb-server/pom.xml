@@ -36,6 +36,7 @@
         <module>sass-kb-collaboration</module>
         <module>sass-kb-notification</module>
         <module>sass-kb-onboarding</module>
+        <module>sass-kb-course</module>
         <module>sass-kb-web</module>
     </modules>
 

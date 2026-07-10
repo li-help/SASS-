@@ -19,6 +19,7 @@
         <dependency><groupId>com.sass.kb</groupId><artifactId>sass-kb-collaboration</artifactId><version>${project.version}</version></dependency>
         <dependency><groupId>com.sass.kb</groupId><artifactId>sass-kb-notification</artifactId><version>${project.version}</version></dependency>
         <dependency><groupId>com.sass.kb</groupId><artifactId>sass-kb-onboarding</artifactId><version>${project.version}</version></dependency>
+        <dependency><groupId>com.sass.kb</groupId><artifactId>sass-kb-course</artifactId><version>${project.version}</version></dependency>
         <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-test</artifactId><scope>test</scope></dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
