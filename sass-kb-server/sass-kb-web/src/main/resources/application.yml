@@ -69,10 +69,7 @@ minio:
   secret-key: minioadmin
   bucket: sass-kb-files
 
-jwt:
-  secret: ${JWT_SECRET:change-me-in-production-use-random-32-char-string}
-  access-token-expire: 30   # 分钟
-  refresh-token-expire: 10080  # 分钟 (7天)
+# JWT 配置已迁移至 taoyue-auth 和 taoyue-gateway，本服务通过 Gateway Header 获取身份信息
 
 management:
   endpoints:

@@ -30,7 +30,6 @@
     <modules>
         <module>sass-kb-common</module>
         <module>sass-kb-tenant</module>
-        <module>sass-kb-auth</module>
         <module>sass-kb-doc</module>
         <module>sass-kb-file</module>
         <module>sass-kb-search</module>

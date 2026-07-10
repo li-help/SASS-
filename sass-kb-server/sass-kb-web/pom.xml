@@ -13,7 +13,6 @@
         <dependency><groupId>org.projectlombok</groupId><artifactId>lombok</artifactId><optional>true</optional></dependency>
         <dependency><groupId>com.sass.kb</groupId><artifactId>sass-kb-common</artifactId><version>${project.version}</version></dependency>
         <dependency><groupId>com.sass.kb</groupId><artifactId>sass-kb-tenant</artifactId><version>${project.version}</version></dependency>
-        <dependency><groupId>com.sass.kb</groupId><artifactId>sass-kb-auth</artifactId><version>${project.version}</version></dependency>
         <dependency><groupId>com.sass.kb</groupId><artifactId>sass-kb-doc</artifactId><version>${project.version}</version></dependency>
         <dependency><groupId>com.sass.kb</groupId><artifactId>sass-kb-file</artifactId><version>${project.version}</version></dependency>
         <dependency><groupId>com.sass.kb</groupId><artifactId>sass-kb-search</artifactId><version>${project.version}</version></dependency>

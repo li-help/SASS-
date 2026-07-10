@@ -1,0 +1,75 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: taoyue-gateway
+  config:
+    import: optional:nacos:${spring.application.name}.yaml?group=DEFAULT_GROUP&refreshEnabled=true
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8849
+      config:
+        server-addr: 127.0.0.1:8849
+        file-extension: yaml
+    gateway:
+      discovery:
+        locator:
+          enabled: true # 开启网关的自动服务发现路由
+          lower-case-service-id: true # 服务名小写
+      routes:
+        # 统一认证服务（同时匹配 /auth/** 和 /api/auth/** 等前缀）
+        - id: taoyue-auth
+          uri: lb://taoyue-auth
+          predicates:
+            - Path=/auth/**, /user/**, /role/**, /menu/**, /permission/**, /audit/**
+
+        # SASS KB 管理端（兼容 /api/ 前缀的历史路由，stripPrefix 去掉 /api 后转发）
+        - id: sass-kb-auth-api
+          uri: lb://taoyue-auth
+          predicates:
+            - Path=/api/auth/**, /api/user/**, /api/role/**, /api/menu/**, /api/permission/**, /api/audit/**
+          filters:
+            - StripPrefix=1
+
+        - id: taoyue-system
+          uri: lb://taoyue-system
+          predicates:
+            - Path=/system/**
+
+        - id: taoyue-course
+          uri: lb://taoyue-course
+          predicates:
+            - Path=/course/**
+
+        - id: taoyue-statistics
+          uri: lb://taoyue-statistics
+          predicates:
+            - Path=/statistics/**
+
+        # SASS KB 业务服务
+        - id: sass-kb-backend
+          uri: http://sass-kb-backend:8080
+          predicates:
+            - Path=/doc/**, /file/**, /search/**, /collab/**, /notification/**, /onboarding/**
+
+        - id: sass-kb-backend-api
+          uri: http://sass-kb-backend:8080
+          predicates:
+            - Path=/api/doc/**, /api/file/**, /api/search/**, /api/collab/**, /api/notification/**, /api/onboarding/**
+          filters:
+            - StripPrefix=1
+
+# Knife4j 网关聚合 Swagger 配置
+knife4j:
+  enable: true
+  gateway:
+    enabled: true
+    # 推荐使用 manual 手动模式，更加稳定，且不会把配置中心等内部服务暴露出去
+    strategy: manual
+    routes:
+      - name: 系统管理服务
+        url: /taoyue-system/v3/api-docs
+        service-name: taoyue-system
+        order: 1

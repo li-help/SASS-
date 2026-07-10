@@ -86,7 +86,68 @@ services:
       timeout: 5s
       retries: 5
 
-  # ========== 后端服务 ==========
+  # ========== 微服务基础设施 ==========
+  nacos:
+    image: nacos/nacos-server:v2.3.0
+    environment:
+      MODE: standalone
+      PREFER_HOST_MODE: hostname
+    ports:
+      - "127.0.0.1:8849:8849"
+      - "127.0.0.1:9848:9848"
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8849/nacos/v1/console/health/readiness"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # ========== 统一认证服务 ==========
+  taoyue-auth:
+    image: ${CI_REGISTRY_IMAGE:-sass-kb}/taoyue-auth:latest
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/sass_kb
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET}
+      NACOS_SERVER_ADDR: nacos:8849
+    ports:
+      - "127.0.0.1:8081:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      nacos:
+        condition: service_healthy
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8081/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+  # ========== API 网关 ==========
+  gateway:
+    image: ${CI_REGISTRY_IMAGE:-sass-kb}/taoyue-gateway:latest
+    ports:
+      - "80:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      JWT_SECRET: ${JWT_SECRET}
+      NACOS_SERVER_ADDR: nacos:8849
+    depends_on:
+      nacos:
+        condition: service_healthy
+      taoyue-auth:
+        condition: service_healthy
+    restart: always
+
+  # ========== 后端服务（SASS KB 业务） ==========
   backend:
     image: ${CI_REGISTRY_IMAGE:-sass-kb}/sass-kb-server:latest
     environment:
@@ -105,9 +166,6 @@ services:
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
       MINIO_BUCKET: sass-kb-files
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_ACCESS_TOKEN_EXPIRE: 30
-      JWT_REFRESH_TOKEN_EXPIRE: 10080
       APP_CORS_ALLOWED_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
       JAVA_OPTS: "-Xms256m -Xmx512m"
     ports:
@@ -131,12 +189,12 @@ services:
       retries: 10
       start_period: 90s
 
-  # ========== 前端 (Nginx) ==========
+  # ========== 前端 (Nginx，静态资源) ==========
   frontend:
     image: ${CI_REGISTRY_IMAGE:-sass-kb}/sass-kb-admin:latest
     ports:
-      - "80:80"
+      - "127.0.0.1:8082:80"
     depends_on:
-      backend:
-        condition: service_healthy
+      gateway:
+        condition: service_started
     restart: always
