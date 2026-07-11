@@ -1,0 +1,34 @@
+# 轻量模式 — 去掉 Nacos 依赖，全部用直连 HTTP
+spring:
+  cloud:
+    nacos:
+      discovery:
+        enabled: false
+      config:
+        enabled: false
+    gateway:
+      routes:
+        # 认证服务
+        - id: taoyue-auth-light
+          uri: http://taoyue-auth:8081
+          predicates:
+            - Path=/auth/**, /user/**, /role/**, /menu/**, /permission/**, /audit/**
+        - id: sass-kb-auth-api-light
+          uri: http://taoyue-auth:8081
+          predicates:
+            - Path=/api/auth/**, /api/user/**, /api/role/**, /api/menu/**, /api/permission/**, /api/audit/**
+          filters:
+            - StripPrefix=1
+        # SASS KB 业务
+        - id: sass-kb-backend-light
+          uri: http://backend:8082
+          predicates:
+            - Path=/doc/**, /file/**, /collab/**, /notification/**, /onboarding/**, /tenant/**, /dashboard/**, /space/**, /folder/**, /comment/**, /diff/**, /webhook/**
+        - id: sass-kb-backend-api-light
+          uri: http://backend:8082
+          predicates:
+            - Path=/api/doc/**, /api/file/**, /api/collab/**, /api/notification/**, /api/onboarding/**, /api/tenant/**, /api/dashboard/**, /api/space/**, /api/folder/**, /api/comment/**, /api/diff/**, /api/webhook/**
+
+logging:
+  level:
+    com.taoyue.gateway: DEBUG

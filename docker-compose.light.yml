@@ -1,0 +1,129 @@
+# 轻量版 — 去掉 ES、RabbitMQ、Nacos，适合 2GB 内存服务器
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: sass_kb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports: ["127.0.0.1:5432:5432"]
+    volumes: ["/opt/sass-kb/data/pgdata:/var/lib/postgresql/data"]
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports: ["127.0.0.1:6379:6379"]
+    restart: always
+    command: redis-server --appendonly yes --maxmemory 64mb
+    deploy:
+      resources:
+        limits:
+          memory: 96M
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+    ports:
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
+    volumes: ["/opt/sass-kb/data/miniodata:/data"]
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  taoyue-auth:
+    image: ${REGISTRY:-ghcr.io/li-help}/taoyue-auth:latest
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/sass_kb
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      SPRING_DATA_REDIS_HOST: redis
+      JWT_SECRET: ${JWT_SECRET}
+      JAVA_TOOL_OPTIONS: "-Xms128m -Xmx256m"
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  gateway:
+    image: ${REGISTRY:-ghcr.io/li-help}/taoyue-gateway:latest
+    ports: ["80:8080"]
+    environment:
+      SPRING_PROFILES_ACTIVE: docker,light
+      JWT_SECRET: ${JWT_SECRET}
+      JAVA_TOOL_OPTIONS: "-Xms128m -Xmx256m"
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+    depends_on:
+      - taoyue-auth
+
+  backend:
+    image: ${REGISTRY:-ghcr.io/li-help}/sass-kb-server:latest
+    environment:
+      SPRING_PROFILES_ACTIVE: prod,light
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/sass_kb
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      SPRING_DATA_REDIS_HOST: redis
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_BUCKET: sass-kb-files
+      JAVA_TOOL_OPTIONS: "-Xms128m -Xmx256m"
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+  frontend:
+    image: ${REGISTRY:-ghcr.io/li-help}/sass-kb-admin:latest
+    ports: ["127.0.0.1:8083:80"]
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+    depends_on:
+      - gateway
