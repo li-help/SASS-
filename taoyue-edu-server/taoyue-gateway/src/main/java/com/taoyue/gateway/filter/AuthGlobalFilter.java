@@ -4,12 +4,15 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
 import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.server.reactive.ServerHttpRequest;
@@ -25,17 +28,21 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
-@Slf4j
 @Component
 public class AuthGlobalFilter implements GlobalFilter, Ordered {
+
+    private static final Logger log = LoggerFactory.getLogger(AuthGlobalFilter.class);
 
     @Value("${jwt.secret:default-secret}")
     private String jwtSecret;
 
     private SecretKey signingKey;
 
+    @Autowired
+    private ReactiveStringRedisTemplate reactiveRedisTemplate;
+
     private static final List<String> WHITELIST = List.of(
-            "/auth/login", "/auth/register", "/auth/refresh",
+            "/auth/login", "/auth/register", "/auth/refresh", "/auth/oauth",
             "/v3/api-docs", "/doc.html", "/webjars",
             "/swagger-resources", "/swagger-ui"
     );
@@ -65,6 +72,29 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
             return chain.filter(exchange);
         }
 
+        // 优先检查 X-API-Key 头部
+        String apiKey = exchange.getRequest().getHeaders().getFirst("X-API-Key");
+        if (StringUtils.hasText(apiKey)) {
+            String keyHash = hashApiKey(apiKey);
+            return reactiveRedisTemplate.opsForValue().get("auth:apikey:" + keyHash)
+                    .flatMap(cached -> {
+                        if ("disabled".equals(cached)) {
+                            return unauthorized(exchange, "API Key 已被禁用");
+                        }
+                        String[] parts = cached.split(":");
+                        if (parts.length == 2) {
+                            ServerHttpRequest mutated = exchange.getRequest().mutate()
+                                    .header("X-Tenant-Id", parts[0])
+                                    .header("X-User-Id", parts[1])
+                                    .build();
+                            return chain.filter(exchange.mutate().request(mutated).build());
+                        }
+                        return unauthorized(exchange, "API Key 格式损坏");
+                    })
+                    .switchIfEmpty(Mono.defer(() -> unauthorized(exchange, "API Key 无效或已过期")));
+        }
+
+        // 其次进行 JWT 验签
         String token = extractToken(exchange.getRequest());
         if (token == null) {
             return unauthorized(exchange, "未登录，请先登录");
@@ -122,5 +152,23 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
         DataBuffer buffer = response.bufferFactory()
                 .wrap(body.getBytes(StandardCharsets.UTF_8));
         return response.writeWith(Mono.just(buffer));
+    }
+
+    private String hashApiKey(String rawKey) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(rawKey.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+            return hexString.toString();
+        } catch (Exception e) {
+            throw new RuntimeException("API Key Hashing failed", e);
+        }
     }
 }
