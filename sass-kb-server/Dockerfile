@@ -1,7 +1,5 @@
 FROM maven:3.9-eclipse-temurin-17-alpine AS build
 WORKDIR /app
-# 使用阿里云镜像加速
-COPY settings.xml /root/.m2/settings.xml
 COPY pom.xml .
 COPY sass-kb-common/pom.xml sass-kb-common/
 COPY sass-kb-tenant/pom.xml sass-kb-tenant/
