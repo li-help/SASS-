@@ -1,8 +1,9 @@
 # 生产环境 Docker Compose
-# 用法：在 ECS 服务器 /opt/sass-kb/ 目录下执行
+# 用法：在服务器 /opt/sass-kb/ 目录下执行
 #   1. 复制 .env.example 为 .env 并填写实际值
-#   2. docker compose up -d
-#   3. docker compose pull  # 拉取最新镜像
+#   2. 导出 REGISTRY 变量：export REGISTRY=ghcr.io/li-help
+#   3. docker compose -f docker-compose.prod.yml up -d
+#   4. docker compose -f docker-compose.prod.yml pull  # 拉取最新镜像
 
 services:
   # ========== 基础设施 ==========
@@ -104,7 +105,7 @@ services:
 
   # ========== 统一认证服务 ==========
   taoyue-auth:
-    image: ${CI_REGISTRY_IMAGE:-sass-kb}/taoyue-auth:latest
+    image: ${REGISTRY:-ghcr.io/li-help}/taoyue-auth:latest
     environment:
       SPRING_PROFILES_ACTIVE: prod
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/sass_kb
@@ -133,11 +134,11 @@ services:
 
   # ========== API 网关 ==========
   gateway:
-    image: ${CI_REGISTRY_IMAGE:-sass-kb}/taoyue-gateway:latest
+    image: ${REGISTRY:-ghcr.io/li-help}/taoyue-gateway:latest
     ports:
       - "80:8080"
     environment:
-      SPRING_PROFILES_ACTIVE: prod
+      SPRING_PROFILES_ACTIVE: docker
       JWT_SECRET: ${JWT_SECRET}
       NACOS_SERVER_ADDR: nacos:8849
     depends_on:
@@ -149,7 +150,7 @@ services:
 
   # ========== 后端服务（SASS KB 业务） ==========
   backend:
-    image: ${CI_REGISTRY_IMAGE:-sass-kb}/sass-kb-server:latest
+    image: ${REGISTRY:-ghcr.io/li-help}/sass-kb-server:latest
     environment:
       SPRING_PROFILES_ACTIVE: prod
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/sass_kb
@@ -169,7 +170,7 @@ services:
       APP_CORS_ALLOWED_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
       JAVA_OPTS: "-Xms256m -Xmx512m"
     ports:
-      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:8082:8082"
     depends_on:
       postgres:
         condition: service_healthy
@@ -183,7 +184,7 @@ services:
         condition: service_healthy
     restart: always
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:8082/actuator/health || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 10
@@ -191,9 +192,9 @@ services:
 
   # ========== 前端 (Nginx，静态资源) ==========
   frontend:
-    image: ${CI_REGISTRY_IMAGE:-sass-kb}/sass-kb-admin:latest
+    image: ${REGISTRY:-ghcr.io/li-help}/sass-kb-admin:latest
     ports:
-      - "127.0.0.1:8082:80"
+      - "127.0.0.1:8083:80"
     depends_on:
       gateway:
         condition: service_started

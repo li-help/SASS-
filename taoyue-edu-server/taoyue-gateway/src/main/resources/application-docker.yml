@@ -1,0 +1,14 @@
+# Docker 环境：SASS KB 后端地址使用 Docker 服务名
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: sass-kb-backend-docker
+          uri: http://backend:8082
+          predicates:
+            - Path=/doc/**, /file/**, /search/**, /collab/**, /notification/**, /onboarding/**, /tenant/**, /dashboard/**, /space/**, /folder/**, /comment/**, /diff/**, /webhook/**
+
+        - id: sass-kb-backend-api-docker
+          uri: http://backend:8082
+          predicates:
+            - Path=/api/doc/**, /api/file/**, /api/search/**, /api/collab/**, /api/notification/**, /api/onboarding/**, /api/tenant/**, /api/dashboard/**, /api/space/**, /api/folder/**, /api/comment/**, /api/diff/**, /api/webhook/**
