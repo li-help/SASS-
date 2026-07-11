@@ -4,6 +4,12 @@ name: Build and Deploy
 on:
   push:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: '部署到服务器'
+        type: boolean
+        default: false
 
 jobs:
   build-backend:
@@ -83,7 +89,7 @@ jobs:
   deploy:
     needs: [build-backend, build-auth, build-gateway, build-frontend]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
       - name: Deploy to server
