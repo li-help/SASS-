@@ -29,6 +29,12 @@ services:
   rabbitmq:
     image: rabbitmq:3-management-alpine
     ports: ['5672:5672', '15672:15672']
+  nacos:
+    image: nacos/nacos-server:v2.3.0
+    environment:
+      MODE: standalone
+      PREFER_HOST_MODE: hostname
+    ports: ['8849:8849', '9848:9848']
 volumes:
   pgdata:
   esdata:
