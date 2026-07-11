@@ -71,6 +71,15 @@ public class TenantController {
         return R.ok();
     }
 
+    @Operation(summary = "删除租户")
+    @DeleteMapping("/{id}")
+    public R<Void> delete(@PathVariable String id, HttpServletRequest request) {
+        checkSuperAdmin(request);
+        tenantMapper.deleteById(id);
+        eventPublisher.publish(EntityEvent.of("DELETED", "TENANT", id, id));
+        return R.ok();
+    }
+
     @Operation(summary = "切换租户状态")
     @PutMapping("/{id}/status")
     public R<Void> toggleStatus(@PathVariable String id, @RequestParam String status, HttpServletRequest request) {

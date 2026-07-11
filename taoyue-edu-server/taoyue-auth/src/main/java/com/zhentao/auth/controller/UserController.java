@@ -104,6 +104,21 @@ public class UserController {
         return R.ok();
     }
 
+    @DeleteMapping("/{id}")
+    public R<Void> delete(@PathVariable String id) {
+        String tenantId = TenantContext.getCurrentTenantId();
+        User existing = userMapper.selectById(id);
+        if (existing == null) {
+            throw new BizException(404, "用户不存在");
+        }
+        if (tenantId != null && !tenantId.isBlank() && !tenantId.equals(existing.getTenantId())) {
+            throw new BizException(403, "无权操作该用户");
+        }
+        userMapper.deleteById(id);
+        eventPublisher.publish(EntityEvent.of("DELETED", "USER", id, tenantId));
+        return R.ok();
+    }
+
     @PutMapping("/{id}/status")
     public R<Void> toggleStatus(@PathVariable String id, @RequestParam String status) {
         if (!VALID_STATUSES.contains(status)) {

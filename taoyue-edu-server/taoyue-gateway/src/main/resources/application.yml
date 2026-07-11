@@ -48,18 +48,17 @@ spring:
           predicates:
             - Path=/statistics/**
 
-        # SASS KB 业务服务
+        # SASS KB 业务服务（无 /api 前缀的内部调用）
         - id: sass-kb-backend
           uri: http://sass-kb-backend:8080
           predicates:
-            - Path=/doc/**, /file/**, /search/**, /collab/**, /notification/**, /onboarding/**
+            - Path=/doc/**, /file/**, /search/**, /collab/**, /notification/**, /onboarding/**, /tenant/**, /dashboard/**, /space/**, /folder/**, /comment/**, /diff/**, /webhook/**
 
+        # SASS KB 业务服务（前端 /api 前缀 → 直接转发，Controller 自带 /api 路径）
         - id: sass-kb-backend-api
           uri: http://sass-kb-backend:8080
           predicates:
-            - Path=/api/doc/**, /api/file/**, /api/search/**, /api/collab/**, /api/notification/**, /api/onboarding/**
-          filters:
-            - StripPrefix=1
+            - Path=/api/doc/**, /api/file/**, /api/search/**, /api/collab/**, /api/notification/**, /api/onboarding/**, /api/tenant/**, /api/dashboard/**, /api/space/**, /api/folder/**, /api/comment/**, /api/diff/**, /api/webhook/**
 
 # Knife4j 网关聚合 Swagger 配置
 knife4j:
