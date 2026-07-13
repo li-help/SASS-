@@ -81,12 +81,15 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: docker,light
       JWT_SECRET: ${JWT_SECRET}
-      JAVA_TOOL_OPTIONS: "-Xms64m -Xmx160m"
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_CLOUD_NACOS_DISCOVERY_ENABLED: "false"
+      SPRING_CLOUD_NACOS_CONFIG_ENABLED: "false"
+      JAVA_TOOL_OPTIONS: "-Xms64m -Xmx256m -XX:MaxMetaspaceSize=64m -XX:ReservedCodeCacheSize=32m"
     restart: always
     deploy:
       resources:
         limits:
-          memory: 256M
+          memory: 384M
     depends_on:
       - taoyue-auth
 
